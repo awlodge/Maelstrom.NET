@@ -11,14 +11,19 @@ namespace UniqueIdGeneratorTests
         {
             await using var client = new MaelstromTestClient<UniqueIdGenerator>();
             await client.StartAsync();
-            var echo = new Generate
+            var generate = new Generate
             {
                 Type = Generate.GenerateType
             };
-            await client.SendAsync(echo);
+            await client.SendAsync(generate);
             var response = await client.ReadOutputAsync<GenerateOk>();
             Assert.NotNull(response);
-            Assert.InRange(response.Body.Id, 0, int.MaxValue);
+
+            await client.SendAsync(generate);
+            var response2 = await client.ReadOutputAsync<GenerateOk>();
+            Assert.NotNull(response2);
+
+            Assert.NotEqual(response.Body.Id, response2.Body.Id);
         }
     }
 }
