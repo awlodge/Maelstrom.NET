@@ -1,5 +1,5 @@
 ﻿using Maelstrom;
-using Maelstrom.Interfaces;
+using Maelstrom.Internals;
 using Maelstrom.Models;
 using TransactionRwRegisterService.Models;
 using TransactionRwRegisterService.Models.MessageBodies;

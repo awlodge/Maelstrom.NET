@@ -1,5 +1,4 @@
-﻿using Maelstrom.Interfaces;
-using Maelstrom.Models;
+﻿using Maelstrom.Models;
 using Maelstrom.Models.MessageBodies;
 using Maelstrom.Models.MessageBodies.KvStore;
 using Microsoft.Extensions.Logging;

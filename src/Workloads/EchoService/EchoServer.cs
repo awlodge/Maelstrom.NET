@@ -1,6 +1,5 @@
 ﻿using EchoService.Models.MessageBodies;
 using Maelstrom;
-using Maelstrom.Interfaces;
 using Maelstrom.Models;
 
 namespace EchoService;

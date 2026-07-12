@@ -1,6 +1,5 @@
 ﻿using BroadcastService.Models.MessageBodies;
 using Maelstrom;
-using Maelstrom.Interfaces;
 using Maelstrom.Models;
 using System.Text.Json;
 

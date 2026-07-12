@@ -1,5 +1,4 @@
 ﻿using Maelstrom;
-using Maelstrom.Interfaces;
 using Maelstrom.Models;
 using UniqueIdService.Models.MessageBodies;
 

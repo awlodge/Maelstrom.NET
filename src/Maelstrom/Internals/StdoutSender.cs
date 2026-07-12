@@ -1,6 +1,4 @@
-﻿using Maelstrom.Interfaces;
-
-namespace Maelstrom;
+﻿namespace Maelstrom.Internals;
 
 internal class StdoutSender : ISender
 {

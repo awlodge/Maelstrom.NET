@@ -1,5 +1,4 @@
-﻿
-namespace Maelstrom.Interfaces;
+﻿namespace Maelstrom;
 
 public interface IKvStoreClient
 {

@@ -1,6 +1,6 @@
 ﻿using KafkaService.Models.MessageBodies;
 using Maelstrom;
-using Maelstrom.Interfaces;
+using Maelstrom.Internals;
 using Maelstrom.Models;
 
 namespace KafkaService;

@@ -1,5 +1,4 @@
-﻿using Maelstrom.Interfaces;
-using Maelstrom.Models;
+﻿using Maelstrom.Models;
 using Maelstrom.Models.MessageBodies;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;

@@ -1,6 +1,4 @@
-﻿using Maelstrom.Interfaces;
-
-namespace Maelstrom;
+﻿namespace Maelstrom;
 
 public class Workload(IMaelstromNode node)
 {

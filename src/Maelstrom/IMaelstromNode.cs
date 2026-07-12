@@ -1,6 +1,6 @@
 ﻿using Maelstrom.Models;
 
-namespace Maelstrom.Interfaces;
+namespace Maelstrom;
 
 public interface IMaelstromNode
 {
