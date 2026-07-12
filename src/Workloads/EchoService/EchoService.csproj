@@ -7,6 +7,9 @@
     <Nullable>enable</Nullable>
     <UserSecretsId>dotnet-MaelstromNode-3f352a88-83de-42a1-abf4-da088867a8d3</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+	<PublishSingleFile>true</PublishSingleFile>
+	<SelfContained>true</SelfContained>
+	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
