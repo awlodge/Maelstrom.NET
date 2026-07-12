@@ -12,7 +12,7 @@ internal class BroadcastService(ILogger<BroadcastService> logger, IMaelstromNode
     private Dictionary<string, string[]> _topology = [];
 
     [MaelstromHandler(Broadcast.BroadcastType)]
-    public async Task HandleBroadcast(Message message)
+    public async Task HandleBroadcast(Message message, CancellationToken cancellationToken)
     {
         var broadcastMessage = message.DeserializeAs<Broadcast>().Body.BroadcastMessage;
         logger.LogInformation("Received broadcast message: {BroadcastMessage}", broadcastMessage);
@@ -35,14 +35,14 @@ internal class BroadcastService(ILogger<BroadcastService> logger, IMaelstromNode
     }
 
     [MaelstromHandler(Read.ReadType)]
-    public async Task HandleRead(Message message)
+    public async Task HandleRead(Message message, CancellationToken cancellationToken)
     {
         logger.LogInformation("Received read request");
         await Node.ReplyAsync(message, new ReadOk([.. _broadcastMessages]));
     }
 
     [MaelstromHandler(Topology.TopologyType)]
-    public async Task HandleTopology(Message message)
+    public async Task HandleTopology(Message message, CancellationToken cancellationToken)
     {
         var topologyMessage = message.DeserializeAs<Topology>().Body;
         logger.LogInformation("Received topology: {topology}", topologyMessage.TopologyData);
