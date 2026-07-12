@@ -1,8 +1,7 @@
-﻿using Maelstrom.Internals;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Maelstrom;
+namespace Maelstrom.Internals;
 
 internal class MaelstromNodeRunner(ILogger<MaelstromNodeRunner> logger, MaelstromNode node) : BackgroundService
 {

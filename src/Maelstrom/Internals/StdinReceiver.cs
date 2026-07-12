@@ -1,4 +1,4 @@
-﻿namespace Maelstrom;
+﻿namespace Maelstrom.Internals;
 
 internal class StdinReceiver : IReceiver
 {

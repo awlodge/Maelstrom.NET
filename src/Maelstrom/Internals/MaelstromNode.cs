@@ -5,7 +5,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
-namespace Maelstrom;
+namespace Maelstrom.Internals;
 
 internal class MaelstromNode : IMaelstromNode, IDisposable
 {

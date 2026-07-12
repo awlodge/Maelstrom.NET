@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Maelstrom.Models;
 
-public abstract class MessageBody
+public class MessageBody
 {
     [JsonPropertyName("type")]
     public required string Type { get; set; }

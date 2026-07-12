@@ -9,7 +9,7 @@ internal class EchoServer(ILogger<EchoServer> logger, IMaelstromNode node) : Wor
     private readonly ILogger<EchoServer> logger = logger;
 
     [MaelstromHandler(Echo.EchoType)]
-    public async Task HandleEcho(Message message)
+    public async Task HandleEcho(Message message, CancellationToken cancellationToken = default)
     {
         var echo = message.DeserializeAs<Echo>().Body;
         logger.LogInformation("Echoing message: {EchoMessage}", echo.EchoMessage);

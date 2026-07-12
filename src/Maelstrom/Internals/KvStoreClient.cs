@@ -3,7 +3,7 @@ using Maelstrom.Models.MessageBodies;
 using Maelstrom.Models.MessageBodies.KvStore;
 using Microsoft.Extensions.Logging;
 
-namespace Maelstrom;
+namespace Maelstrom.Internals;
 
 internal class KvStoreClient(IMaelstromNode node, ILogger<IMaelstromNode> logger, string serviceName) : IKvStoreClient
 {

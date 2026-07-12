@@ -17,4 +17,10 @@
     <ProjectReference Include="..\..\Maelstrom\Maelstrom.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+	<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+	    <_Parameter1>EchoServiceTests</_Parameter1>
+	</AssemblyAttribute>
+  </ItemGroup>
+
 </Project>

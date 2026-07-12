@@ -13,6 +13,13 @@ public class Message<T> : Message where T : MessageBody
     };
 
     [SetsRequiredMembers]
+    [JsonConstructor]
+    public Message(string src, string dest, JsonObject rawBody) : base(src, dest, rawBody)
+    {
+        Body = RawBody.Deserialize<T>() ?? throw new Exception($"Failed to deserialize message body as {typeof(T)}/");
+    }
+
+    [SetsRequiredMembers]
     public Message(string src, string dest, T body) : base(src, dest, null)
     {
         Body = body;
@@ -40,11 +47,11 @@ public abstract class Message(string src, string dest, JsonObject? rawBody)
 {
     [JsonPropertyName("src")]
     [JsonRequired]
-    public string Src { get; } = src;
+    public string Src { get; set; } = src;
 
     [JsonPropertyName("dest")]
     [JsonRequired]
-    public string Dest { get; } = dest;
+    public string Dest { get; set; } = dest;
 
     [JsonPropertyName("body")]
     [JsonRequired]

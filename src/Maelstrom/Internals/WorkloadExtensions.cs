@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
-using Maelstrom.Internals;
 
-namespace Maelstrom;
+namespace Maelstrom.Internals;
 
 internal static class WorkloadExtensions
 {
