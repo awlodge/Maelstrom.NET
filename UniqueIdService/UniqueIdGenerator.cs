@@ -5,7 +5,7 @@ using UniqueIdService.Models.MessageBodies;
 
 namespace UniqueIdService;
 
-internal class UniqueIdGenerator(ILogger<UniqueIdGenerator> logger, IMaelstromNode node) : Workload(logger, node)
+internal class UniqueIdGenerator(ILogger<UniqueIdGenerator> logger, IMaelstromNode node) : Workload(node)
 {
     private readonly ILogger<UniqueIdGenerator> logger = logger;
     private int _idCounter = 0;

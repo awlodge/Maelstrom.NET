@@ -2,5 +2,5 @@
 
 public interface ISender : IDisposable
 {
-    Task SendAsync(string message);
+    Task SendAsync(string message, CancellationToken cancellationToken);
 }

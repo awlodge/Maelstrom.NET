@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace BroadcastService;
 
-internal class BroadcastService(ILogger<BroadcastService> logger, IMaelstromNode node) : Workload(logger, node)
+internal class BroadcastService(ILogger<BroadcastService> logger, IMaelstromNode node) : Workload(node)
 {
     private readonly ILogger<BroadcastService> logger = logger;
     private readonly HashSet<int> _broadcastMessages = [];
@@ -15,9 +15,9 @@ internal class BroadcastService(ILogger<BroadcastService> logger, IMaelstromNode
     [MaelstromHandler(Broadcast.BroadcastType)]
     public async Task HandleBroadcast(Message message)
     {
-        var broadcastMessage = message.DeserializeAs<Broadcast>().BroadcastMessage;
+        var broadcastMessage = message.DeserializeAs<Broadcast>().Body.BroadcastMessage;
         logger.LogInformation("Received broadcast message: {BroadcastMessage}", broadcastMessage);
-        await node.ReplyAsync(message, new BroadcastOk());
+        await Node.ReplyAsync(message, new BroadcastOk());
         if (_broadcastMessages.Contains(broadcastMessage))
         {
             logger.LogInformation("Message already seen, ignoring broadcast");
@@ -39,27 +39,27 @@ internal class BroadcastService(ILogger<BroadcastService> logger, IMaelstromNode
     public async Task HandleRead(Message message)
     {
         logger.LogInformation("Received read request");
-        await node.ReplyAsync(message, new ReadOk([.. _broadcastMessages]));
+        await Node.ReplyAsync(message, new ReadOk([.. _broadcastMessages]));
     }
 
     [MaelstromHandler(Topology.TopologyType)]
     public async Task HandleTopology(Message message)
     {
-        var topologyMessage = message.DeserializeAs<Topology>();
+        var topologyMessage = message.DeserializeAs<Topology>().Body;
         logger.LogInformation("Received topology: {topology}", topologyMessage.TopologyData);
         var topology = topologyMessage.TopologyData.Deserialize<Dictionary<string, string[]>>();
         if (topology == null)
         {
-            await node.ErrorAsync(message, ErrorCodes.MalformedRequest, "Malformed topology data");
+            await Node.ErrorAsync(message, ErrorCodes.MalformedRequest, "Malformed topology data");
             throw new Exception($"Malformed topology data: {topologyMessage.TopologyData}");
         }
         _topology = topology;
-        await node.ReplyAsync(message, new TopologyOk());
+        await Node.ReplyAsync(message, new TopologyOk());
     }
 
     private List<string> GetNextHops(Message message)
     {
         // Return neighbors excluding message source to avoid reflection.
-        return _topology[node.NodeId].Where(n => n != message.Src).ToList();
+        return _topology[Node.NodeId].Where(n => n != message.Src).ToList();
     }
 }

@@ -12,8 +12,6 @@ internal class StdinReceiver : IReceiver
         _stream = new StreamReader(inputStream);
     }
 
-    public async Task<string?> RecvAsync() => await _stream.ReadLineAsync();
-
     public async Task<string?> RecvAsync(CancellationToken cancellationToken) =>
         await _stream.ReadLineAsync(cancellationToken);
 

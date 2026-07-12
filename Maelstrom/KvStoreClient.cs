@@ -22,7 +22,7 @@ internal class KvStoreClient(IMaelstromNode node, ILogger<IMaelstromNode> logger
         var response = await _node.RpcAsync(_serviceName, read);
         if (response.Body.Type == ErrorBody.ErrorBodyType)
         {
-            var error = response.DeserializeAs<ErrorBody>();
+            var error = response.DeserializeAs<ErrorBody>().Body;
             logger.LogDebug("Error reading key {key}: {errorCode} {errorText}", key, error.ErrorCode, error.ErrorText);
             if (error.ErrorCode == ErrorCodes.KeyDoesNotExist)
             {
@@ -32,7 +32,7 @@ internal class KvStoreClient(IMaelstromNode node, ILogger<IMaelstromNode> logger
             throw new KvStoreException($"Error reading key {key}: {error.ErrorText}");
         }
 
-        var readOk = response.DeserializeAs<ReadOk<U>>();
+        var readOk = response.DeserializeAs<ReadOk<U>>().Body;
         logger.LogDebug("Read key {key}: {value}", key, readOk.Value);
         return readOk.Value;
     }
@@ -58,7 +58,7 @@ internal class KvStoreClient(IMaelstromNode node, ILogger<IMaelstromNode> logger
         switch (response.Body.Type)
         {
             case ErrorBody.ErrorBodyType:
-                var error = response.DeserializeAs<ErrorBody>();
+                var error = response.DeserializeAs<ErrorBody>().Body;
                 throw new KvStoreException($"Error writing key {key}: {error.ErrorText}");
 
             case WriteOk.WriteOkType:
@@ -78,7 +78,7 @@ internal class KvStoreClient(IMaelstromNode node, ILogger<IMaelstromNode> logger
         switch (response.Body.Type)
         {
             case ErrorBody.ErrorBodyType:
-                var error = response.DeserializeAs<ErrorBody>();
+                var error = response.DeserializeAs<ErrorBody>().Body;
                 logger.LogDebug("Error setting key {key}: {errorCode} {errorText}", key, error.ErrorCode, error.ErrorText);
 
                 throw error.ErrorCode switch

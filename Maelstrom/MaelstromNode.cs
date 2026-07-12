@@ -2,12 +2,13 @@
 using Maelstrom.Models;
 using Maelstrom.Models.MessageBodies;
 using Microsoft.Extensions.Logging;
-using System.Reflection;
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 namespace Maelstrom;
 
-internal class MaelstromNode : IMaelstromNode
+internal class MaelstromNode : IMaelstromNode, IDisposable
 {
     private readonly ILogger<MaelstromNode> logger;
     private readonly IReceiver _receiver;
@@ -18,16 +19,16 @@ internal class MaelstromNode : IMaelstromNode
     private readonly KvStoreClient _linKvStoreClient;
 
     private int _msgId = 0;
-    private readonly Dictionary<string, Func<Message, Task>> _messageHandlers = [];
-    private readonly Dictionary<int, TaskCompletionSource<Message>> _replyHandlers = [];
-    private readonly HashSet<Task> _activeHandlers = [];
+    private readonly ConcurrentDictionary<string, MaelstromHandler> _messageHandlers = [];
+    private readonly ConcurrentDictionary<int, TaskCompletionSource<Message>> _replyHandlers = [];
     private readonly SemaphoreSlim _sendLock = new(1);
-    private readonly SemaphoreSlim _replyHandlersLock = new(1);
 
     public string NodeId => _nodeId;
     public string[] NodeIds => _nodeIds;
     public IKvStoreClient SeqKvStoreClient => _seqKvStoreClient;
     public IKvStoreClient LinKvStoreClient => _linKvStoreClient;
+
+    internal delegate Task MaelstromHandler(Message msg, CancellationToken cancellationToken = default);
 
     public MaelstromNode(ILogger<MaelstromNode> logger, IReceiver receiver, ISender sender)
     {
@@ -38,16 +39,14 @@ internal class MaelstromNode : IMaelstromNode
         _linKvStoreClient = new(this, this.logger, "lin-kv");
     }
 
-    public void AddMessageHandlers<T>(T workload) where T : class
+    internal void AddMessageHandlers(IDictionary<string, MaelstromHandler> handlers)
     {
-        var handlers = workload.GetType()
-            .GetMethods()
-            .Where(m => m.GetCustomAttributes().OfType<MaelstromHandlerAttribute>().Any())
-            .ToDictionary(m => m.GetCustomAttribute<MaelstromHandlerAttribute>()!.MessageType, m => (Func<Message, Task>)m.CreateDelegate(typeof(Func<Message, Task>), workload));
-
         foreach (var handler in handlers)
         {
-            _messageHandlers.Add(handler.Key, handler.Value);
+            if (!_messageHandlers.TryAdd(handler.Key, handler.Value))
+            {
+                throw new InvalidOperationException($"Handler for message type {handler.Key} already registered");
+            }
         }
     }
 
@@ -55,13 +54,14 @@ internal class MaelstromNode : IMaelstromNode
     {
         logger.LogInformation("Starting...");
         await InitAsync(stoppingToken);
+        HashSet<Task> activeHandlers = [];
         while (!stoppingToken.IsCancellationRequested)
         {
             var message = await RecvAsync(stoppingToken);
             if (message != null)
             {
                 logger.LogInformation("Received message of type: {MessageType}", message.Body.Type);
-                _activeHandlers.Add(ProcessMessageAsync(message));
+                activeHandlers.Add(ProcessMessageAsync(message, stoppingToken));
             }
             else
             {
@@ -69,18 +69,17 @@ internal class MaelstromNode : IMaelstromNode
             }
         }
         logger.LogInformation("Waiting for active tasks to complete...");
-        await Task.WhenAll(_activeHandlers);
+        await Task.WhenAll(activeHandlers);
     }
 
-    private async Task ProcessMessageAsync(Message message)
+    private async Task ProcessMessageAsync(Message message, CancellationToken cancellationToken)
     {
         try
         {
             if (message.Body.InReplyTo != null)
             {
-                int replyId = (int)message.Body.InReplyTo!;
-                var replyTcs = await GetReplyHandler(replyId);
-                if (replyTcs == null)
+                int replyId = message.Body.InReplyTo.Value;
+                if (!TryGetReplyHandler(replyId, out var replyTcs))
                 {
                     logger.LogError("No handler found for reply message with id {ReplyId}", replyId);
                 }
@@ -93,7 +92,7 @@ internal class MaelstromNode : IMaelstromNode
             {
                 try
                 {
-                    await handler(message);
+                    await handler(message, cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -126,7 +125,7 @@ internal class MaelstromNode : IMaelstromNode
             await ErrorAsync(message, ErrorCodes.MalformedRequest, "First message must be an init message");
             throw new Exception("First message must be an init message");
         }
-        var init = message.DeserializeAs<Init>();
+        var init = message.DeserializeAs<Init>().Body;
         _nodeId = init.NodeId;
         _nodeIds = init.NodeIds;
         logger.LogInformation("Node initialized. Node ID: {NodeId}", NodeId);
@@ -141,16 +140,7 @@ internal class MaelstromNode : IMaelstromNode
 
     private async Task<Message?> RecvAsync(CancellationToken? cancellationToken = null)
     {
-        string? rawMessage;
-        if (cancellationToken != null)
-        {
-            rawMessage = await _receiver.RecvAsync(cancellationToken.Value);
-        }
-        else
-        {
-            rawMessage = await _receiver.RecvAsync();
-        }
-
+        var rawMessage = await _receiver.RecvAsync(cancellationToken ?? CancellationToken.None);
         logger.LogDebug("Received message: {RawMessage}", rawMessage);
         if (rawMessage == null)
         {
@@ -159,7 +149,7 @@ internal class MaelstromNode : IMaelstromNode
 
         try
         {
-            return JsonSerializer.Deserialize<Message>(rawMessage);
+            return JsonSerializer.Deserialize<Message<MessageBody>>(rawMessage);
         }
         catch (JsonException ex)
         {
@@ -168,16 +158,16 @@ internal class MaelstromNode : IMaelstromNode
         }
     }
 
-    public async Task SendAsync(string destination, MessageBody body)
+    public async Task SendAsync<T>(string destination, T body) where T : MessageBody
     {
         await _sendLock.WaitAsync();
         try
         {
             body.MsgId = _msgId;
-            var message = new Message(NodeId, destination, body);
+            var message = new Message<T>(NodeId, destination, body);
             var rawMessage = message.Serialize();
             logger.LogDebug("Sending message: {RawMessage}", rawMessage);
-            await _sender.SendAsync(rawMessage);
+            await _sender.SendAsync(rawMessage, CancellationToken.None);
             _msgId++;
         }
         finally
@@ -202,18 +192,18 @@ internal class MaelstromNode : IMaelstromNode
         await ReplyAsync(originalMessage, body);
     }
 
-    public async Task<Message> RpcAsync(string destination, MessageBody body)
+    public async Task<Message> RpcAsync<T>(string destination, T body) where T : MessageBody
     {
         Task<Message> replyTask;
         await _sendLock.WaitAsync();
         try
         {
             body.MsgId = _msgId;
-            var message = new Message(NodeId, destination, body);
+            var message = new Message<T>(NodeId, destination, body);
             var rawMessage = message.Serialize();
-            replyTask = (await AddReplyHander(_msgId)).Task;
+            replyTask = AddReplyHander(_msgId).Task;
             logger.LogDebug("Sending RPC message: {RawMessage}", rawMessage);
-            await _sender.SendAsync(rawMessage);
+            await _sender.SendAsync(rawMessage, CancellationToken.None);
             _msgId++;
         }
         finally
@@ -224,38 +214,19 @@ internal class MaelstromNode : IMaelstromNode
         return await replyTask;
     }
 
-    private async Task<TaskCompletionSource<Message>> AddReplyHander(int msgId)
+    private TaskCompletionSource<Message> AddReplyHander(int msgId)
     {
         var tcs = new TaskCompletionSource<Message>();
-        await _replyHandlersLock.WaitAsync();
-        try
+        if (!_replyHandlers.TryAdd(msgId, tcs))
         {
-            _replyHandlers.Add(msgId, tcs);
-        }
-        finally
-        {
-            _replyHandlersLock.Release();
+            throw new InvalidOperationException($"Reply handler already registered for message ID {msgId}");
         }
 
         return tcs;
     }
 
-    private async Task<TaskCompletionSource<Message>?> GetReplyHandler(int msgId)
+    private bool TryGetReplyHandler(int msgId, [NotNullWhen(true)] out TaskCompletionSource<Message>? tcs)
     {
-        TaskCompletionSource<Message>? tcs;
-        await _replyHandlersLock.WaitAsync();
-        try
-        {
-            if (_replyHandlers.TryGetValue(msgId, out tcs))
-            {
-                _replyHandlers.Remove(msgId);
-            }
-        }
-        finally
-        {
-            _replyHandlersLock.Release();
-        }
-
-        return tcs;
+        return _replyHandlers.TryRemove(msgId, out tcs);
     }
 }

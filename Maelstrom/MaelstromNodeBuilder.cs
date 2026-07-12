@@ -1,5 +1,7 @@
 ﻿using Maelstrom.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 
 namespace Maelstrom;
 
@@ -11,7 +13,7 @@ public static class MaelstromNodeBuilder
         where TSend : class, ISender
         => services
             .SetupMaelstromNodeDependencies<TRec, TSend>()
-            .AddHostedService<TWorkload>();
+            .AddSingleton<Workload, TWorkload>();
 
     public static IServiceCollection AddMaelstromNodeWorkload<TWorkload>(this IServiceCollection services)
         where TWorkload : Workload
@@ -20,11 +22,22 @@ public static class MaelstromNodeBuilder
     public static IServiceCollection SetupMaelstromNodeDependencies<TRec, TSend>(this IServiceCollection services)
         where TRec : class, IReceiver
         where TSend : class, ISender
-        => services
-            .AddSingleton<IReceiver, TRec>()
-            .AddSingleton<ISender, TSend>()
-            .AddSingleton<IMaelstromNode, MaelstromNode>();
+    {
+        services.TryAddSingleton<IReceiver, TRec>();
+        services.TryAddSingleton<ISender, TSend>();
+        services.TryAddSingleton<MaelstromNode>();
+        services.TryAddSingleton<IMaelstromNode>(sp => sp.GetRequiredService<MaelstromNode>());
+        services.AddHostedService<MaelstromNodeRunner>();
+        return services;
+    }
 
-    public static IServiceCollection SetupMaelstromNodeDependencies(this IServiceCollection services)
-        => services.SetupMaelstromNodeDependencies<StdinReceiver, StdoutSender>();
+    public static async Task RunMaelstromNodeAsync(this IHost host, CancellationToken cancellationToken = default)
+    {
+        var node = host.Services.GetRequiredService<MaelstromNode>();
+        foreach (var workload in host.Services.GetServices<Workload>())
+        {
+            node.AddMessageHandlers(workload.GetHandlers());
+        }
+        await host.RunAsync(cancellationToken);
+    }
 }

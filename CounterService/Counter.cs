@@ -5,7 +5,7 @@ using Maelstrom.Models;
 
 namespace CounterService;
 
-internal class Counter(ILogger<Counter> logger, IMaelstromNode node) : Workload(logger, node)
+internal class Counter(ILogger<Counter> logger, IMaelstromNode node) : Workload(node)
 {
     private const string _counterKey = "counter";
     private const int _maxAttempts = 10;
@@ -25,7 +25,7 @@ internal class Counter(ILogger<Counter> logger, IMaelstromNode node) : Workload(
     [MaelstromHandler(Add.AddType)]
     public async Task HandleAdd(Message message)
     {
-        var add = message.DeserializeAs<Add>();
+        var add = message.DeserializeAs<Add>().Body;
         logger.LogDebug("Received counter add {delta}", add.Delta);
         await node.ReplyAsync(message, new AddOk());
         var latestValue = await IncrementValue(add.Delta);

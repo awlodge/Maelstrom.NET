@@ -6,7 +6,7 @@ using TransactionRwRegisterService.Models.MessageBodies;
 
 namespace TransactionRwRegisterService;
 
-internal class TransactionRwRegister(ILogger<TransactionRwRegister> logger, IMaelstromNode node) : Workload(logger, node)
+internal class TransactionRwRegister(ILogger<TransactionRwRegister> logger, IMaelstromNode node) : Workload(node)
 {
     private const string _transactionIdKey = "transactionId";
     private readonly ILogger<TransactionRwRegister> logger = logger;
@@ -15,7 +15,7 @@ internal class TransactionRwRegister(ILogger<TransactionRwRegister> logger, IMae
     [MaelstromHandler(Models.MessageBodies.Transaction.TxnType)]
     public async Task HandleTransaction(Message message)
     {
-        var transaction = message.DeserializeAs<Models.MessageBodies.Transaction>();
+        var transaction = message.DeserializeAs<Models.MessageBodies.Transaction>().Body;
         var completedTransactions = await ExecuteTransactions(transaction.Operations);
         await node.ReplyAsync(message, new TransactionOk(completedTransactions));
     }

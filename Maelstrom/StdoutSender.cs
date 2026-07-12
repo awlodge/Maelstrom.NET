@@ -14,7 +14,7 @@ internal class StdoutSender : ISender
         };
         Console.SetOut(_stream);
     }
-    public async Task SendAsync(string message) => await _stream.WriteLineAsync(message);
+    public async Task SendAsync(string message, CancellationToken cancellationToken) => await _stream.WriteLineAsync(message.AsMemory(), cancellationToken);
 
     public void Dispose() => _stream.Dispose();
 }
