@@ -46,6 +46,7 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
             {
                 throw new InvalidOperationException($"Handler for message type {handler.Key} already registered");
             }
+            logger.LogInformation("Registered handler for message type '{MessageType}'", handler.Key);
         }
     }
 
