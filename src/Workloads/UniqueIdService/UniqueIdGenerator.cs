@@ -10,7 +10,7 @@ internal class UniqueIdGenerator(ILogger<UniqueIdGenerator> logger, IMaelstromNo
     private int _idCounter = 0;
 
     [MaelstromHandler(Generate.GenerateType)]
-    public async Task HandleGenerate(Message message)
+    public async Task HandleGenerate(Message message, CancellationToken cancellationToken)
     {
         var generatedId = GenerateId();
         logger.LogInformation("Received Generate request, generated id {Id}", generatedId);
@@ -20,6 +20,6 @@ internal class UniqueIdGenerator(ILogger<UniqueIdGenerator> logger, IMaelstromNo
     private int GenerateId()
     {
         // Id is generated from a combination of process Id, random seed and message Id.
-        return 1000000000 * _idCounter++ + 100000 * new Random().Next(0, 100) + Environment.ProcessId;
+        return 1000000000 * Interlocked.Increment(ref _idCounter) + 100000 * new Random().Next(0, 100) + Environment.ProcessId;
     }
 }

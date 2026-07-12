@@ -27,6 +27,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Maelstrom.TestSupport", "te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EchoServiceTests", "test\EchoServiceTests\EchoServiceTests.csproj", "{77CBA90B-579F-4DC1-ACCC-0566BE0E3ED1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniqueIdGeneratorTests", "test\UniqueIdGeneratorTests\UniqueIdGeneratorTests.csproj", "{3AC94972-0CC6-48A0-87BF-412AAFD4D055}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,10 @@ Global
 		{77CBA90B-579F-4DC1-ACCC-0566BE0E3ED1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{77CBA90B-579F-4DC1-ACCC-0566BE0E3ED1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{77CBA90B-579F-4DC1-ACCC-0566BE0E3ED1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3AC94972-0CC6-48A0-87BF-412AAFD4D055}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3AC94972-0CC6-48A0-87BF-412AAFD4D055}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3AC94972-0CC6-48A0-87BF-412AAFD4D055}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3AC94972-0CC6-48A0-87BF-412AAFD4D055}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -84,6 +90,7 @@ Global
 		{17180E5D-15C5-4492-9D72-1E74EAE67460} = {CA9E0016-2D81-41E9-985B-6042B8EBA35D}
 		{35DA8D81-79C7-4E11-AB0A-05EAA8273AF9} = {1074A9D1-DF85-415C-BA0F-0DE8E4A8BE58}
 		{77CBA90B-579F-4DC1-ACCC-0566BE0E3ED1} = {1074A9D1-DF85-415C-BA0F-0DE8E4A8BE58}
+		{3AC94972-0CC6-48A0-87BF-412AAFD4D055} = {1074A9D1-DF85-415C-BA0F-0DE8E4A8BE58}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A69B1778-8100-4DB8-99D8-C72333C7FBF4}
