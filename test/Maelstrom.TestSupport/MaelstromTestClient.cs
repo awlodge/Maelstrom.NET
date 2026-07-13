@@ -24,7 +24,7 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable where TWorkload :
     public string SrcNodeId => _srcNodeId;
     public string DstNodeId => _dstNodeId;
 
-    public MaelstromTestClient()
+    public MaelstromTestClient(Action<IHostApplicationBuilder>? configure = null)
     {
         var receiver = new ChannelReceiver(_nodeInput);
         var sender = new ChannelSender(_nodeOutput);
@@ -33,6 +33,7 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable where TWorkload :
         builder.Services.AddSingleton<IReceiver>(receiver);
         builder.Services.AddSingleton<ISender>(sender);
         builder.Services.AddMaelstromNodeWorkload<TWorkload, ChannelReceiver, ChannelSender>();
+        configure?.Invoke(builder);
 
         _host = builder.Build();
     }
