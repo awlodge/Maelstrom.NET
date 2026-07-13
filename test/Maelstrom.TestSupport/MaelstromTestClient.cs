@@ -15,11 +15,14 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable where TWorkload :
     private Task? _runner = null;
     private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
-    private readonly string _srcNodeId = "node-0";
-    private readonly string _dstNodeId = "node-1";
+    private const string _srcNodeId = "c1";
+    private const string _dstNodeId = "n1";
     private int _msgId = 1;
 
     public TimeSpan DefaultReceiveTimeOut { get; init; } = TimeSpan.FromSeconds(1);
+
+    public string SrcNodeId => _srcNodeId;
+    public string DstNodeId => _dstNodeId;
 
     public MaelstromTestClient()
     {
@@ -34,11 +37,13 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable where TWorkload :
         _host = builder.Build();
     }
 
-    public async Task SendAsync<T>(T body) where T : MessageBody
+    public async Task SendAsync<T>(T body) where T : MessageBody => await SendAsync(body, SrcNodeId, DstNodeId);
+
+    public async Task SendAsync<T>(T body, string src, string dst) where T : MessageBody
     {
         body.MsgId = _msgId;
         _msgId++;
-        var message = new Message<T>(_srcNodeId, _dstNodeId, body);
+        var message = new Message<T>(src, dst, body);
         var rawMessage = message.Serialize();
         await _nodeInput.Writer.WriteAsync(rawMessage);
     }
@@ -89,7 +94,7 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable where TWorkload :
         var init = new Init
         {
             Type = Init.InitType,
-            NodeId = _srcNodeId,
+            NodeId = DstNodeId,
             NodeIds = []
         };
         await SendAsync(init);

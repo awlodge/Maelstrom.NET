@@ -1,7 +1,6 @@
 ﻿using BroadcastService.Models.MessageBodies;
 using Maelstrom;
 using Maelstrom.Models;
-using System.Text.Json;
 
 namespace BroadcastService;
 
@@ -46,7 +45,7 @@ internal class BroadcastService(ILogger<BroadcastService> logger, IMaelstromNode
     {
         var topologyMessage = message.DeserializeAs<Topology>().Body;
         logger.LogInformation("Received topology: {topology}", topologyMessage.TopologyData);
-        var topology = topologyMessage.TopologyData.Deserialize<Dictionary<string, string[]>>();
+        var topology = topologyMessage.TopologyData;
         if (topology == null)
         {
             await Node.ErrorAsync(message, ErrorCodes.MalformedRequest, "Malformed topology data");
@@ -59,6 +58,8 @@ internal class BroadcastService(ILogger<BroadcastService> logger, IMaelstromNode
     private List<string> GetNextHops(Message message)
     {
         // Return neighbors excluding message source to avoid reflection.
-        return _topology[Node.NodeId].Where(n => n != message.Src).ToList();
+        return _topology.TryGetValue(Node.NodeId, out var neighbors)
+            ? neighbors.Where(n => n != message.Src).ToList()
+            : [];
     }
 }
