@@ -13,7 +13,8 @@ public static class MaelstromNodeBuilder
         where TSend : class, ISender
         => services
             .SetupMaelstromNodeDependencies<TRec, TSend>()
-            .AddSingleton<Workload, TWorkload>();
+            .AddSingleton<TWorkload>()
+            .AddSingleton<Workload>(sp => sp.GetRequiredService<TWorkload>());
 
     public static IServiceCollection AddMaelstromNodeWorkload<TWorkload>(this IServiceCollection services)
         where TWorkload : Workload
