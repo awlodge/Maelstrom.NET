@@ -158,7 +158,7 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
         }
     }
 
-    public async Task SendAsync<T>(string destination, T body) where T : MessageBody
+    public async Task SendAsync<T>(string destination, T body, CancellationToken cancellationToken = default) where T : MessageBody
     {
         await _sendLock.WaitAsync();
         try
@@ -167,7 +167,7 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
             var message = new Message<T>(NodeId, destination, body);
             var rawMessage = message.Serialize();
             logger.LogDebug("Sending message: {RawMessage}", rawMessage);
-            await _sender.SendAsync(rawMessage, CancellationToken.None);
+            await _sender.SendAsync(rawMessage, cancellationToken);
             _msgId++;
         }
         finally
@@ -176,23 +176,23 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
         }
     }
 
-    public async Task ReplyAsync(Message originalMessage, MessageBody body)
+    public async Task ReplyAsync(Message originalMessage, MessageBody body, CancellationToken cancellationToken = default)
     {
         if (originalMessage.Body.MsgId == null)
         {
             throw new Exception("For reply, original message must have a MsgId");
         }
         body.InReplyTo = (int)originalMessage.Body.MsgId;
-        await SendAsync(originalMessage.Src, body);
+        await SendAsync(originalMessage.Src, body, cancellationToken);
     }
 
-    public async Task ErrorAsync(Message originalMessage, ErrorCodes errorCode, string errorMessage)
+    public async Task ErrorAsync(Message originalMessage, ErrorCodes errorCode, string errorMessage, CancellationToken cancellationToken = default)
     {
         var body = new ErrorBody(errorCode, errorMessage);
-        await ReplyAsync(originalMessage, body);
+        await ReplyAsync(originalMessage, body, cancellationToken);
     }
 
-    public async Task<Message> RpcAsync<T>(string destination, T body) where T : MessageBody
+    public async Task<Message> RpcAsync<T>(string destination, T body, TimeSpan? timeout = null, CancellationToken cancellationToken = default) where T : MessageBody
     {
         Task<Message> replyTask;
         await _sendLock.WaitAsync();
@@ -203,7 +203,7 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
             var rawMessage = message.Serialize();
             replyTask = AddReplyHander(_msgId).Task;
             logger.LogDebug("Sending RPC message: {RawMessage}", rawMessage);
-            await _sender.SendAsync(rawMessage, CancellationToken.None);
+            await _sender.SendAsync(rawMessage, cancellationToken);
             _msgId++;
         }
         finally
@@ -211,7 +211,24 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
             _sendLock.Release();
         }
 
-        return await replyTask;
+        var cancellationTask = timeout != null ? Task.Delay(timeout.Value, cancellationToken) : Task.FromCanceled(cancellationToken);
+        await Task.WhenAny([replyTask, cancellationTask]);
+        if (replyTask.IsCompletedSuccessfully)
+        {
+            return replyTask.Result;
+        }
+        else if (replyTask.IsFaulted)
+        {
+            throw new RpcFailedException("RPC failed", replyTask.Exception);
+        }
+        else if (cancellationTask.IsFaulted)
+        {
+            throw new RpcFailedException("RPC failed", cancellationTask.Exception);
+        }
+        else
+        {
+            throw new RpcFailedException("RPC timed out or was cancelled");
+        }
     }
 
     private TaskCompletionSource<Message> AddReplyHander(int msgId)
@@ -229,4 +246,13 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
     {
         return _replyHandlers.TryRemove(msgId, out tcs);
     }
+}
+
+public class RpcFailedException : Exception
+{
+    public RpcFailedException() : base() { }
+
+    public RpcFailedException(string message) : base(message) { }
+
+    public RpcFailedException(string message, Exception inner) : base(message, inner) { }
 }
