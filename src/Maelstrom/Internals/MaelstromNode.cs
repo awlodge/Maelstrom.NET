@@ -196,12 +196,13 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
     {
         Task<Message> replyTask;
         await _sendLock.WaitAsync();
+        var rpcMsgId = _msgId;
         try
         {
-            body.MsgId = _msgId;
+            body.MsgId = rpcMsgId;
             var message = new Message<T>(NodeId, destination, body);
             var rawMessage = message.Serialize();
-            replyTask = AddReplyHander(_msgId).Task;
+            replyTask = AddReplyHander(rpcMsgId).Task;
             logger.LogDebug("Sending RPC message: {RawMessage}", rawMessage);
             await _sender.SendAsync(rawMessage, cancellationToken);
             _msgId++;
@@ -223,10 +224,12 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
         }
         else if (cancellationTask.IsFaulted)
         {
+            TryGetReplyHandler(rpcMsgId, out _);
             throw new RpcFailedException("RPC failed", cancellationTask.Exception);
         }
         else
         {
+            TryGetReplyHandler(rpcMsgId, out _);
             throw new RpcFailedException("RPC timed out or was cancelled");
         }
     }

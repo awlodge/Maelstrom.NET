@@ -2,15 +2,17 @@
 using Maelstrom;
 using Maelstrom.Internals;
 using Maelstrom.Models;
+using Microsoft.Extensions.Options;
 
 namespace BroadcastService;
 
-internal class BroadcastService(ILogger<BroadcastService> logger, IMaelstromNode node) : Workload(node)
+internal class BroadcastService(ILogger<BroadcastService> logger, IMaelstromNode node, IOptions<BroadcastServiceOptions> options) : Workload(node)
 {
     private readonly ILogger<BroadcastService> logger = logger;
     private readonly HashSet<int> _broadcastMessages = [];
     private Dictionary<string, string[]> _topology = [];
-    private readonly TimeSpan _rpcTimeout = TimeSpan.FromSeconds(1);
+    private readonly TimeSpan _rpcTimeout = options.Value.RpcTimeout;
+    private readonly TimeSpan _rpcRetryDelay = options.Value.RpcRetryDelay;
 
     [MaelstromHandler(Broadcast.BroadcastType)]
     public async Task HandleBroadcast(Message message, CancellationToken cancellationToken)
@@ -57,48 +59,20 @@ internal class BroadcastService(ILogger<BroadcastService> logger, IMaelstromNode
         await Node.ReplyAsync(message, new TopologyOk());
     }
 
-    public async Task PollNeighborsAsync(CancellationToken cancellationToken)
-    {
-        if (Neighbors.Count > 0)
-        {
-            logger.LogInformation("Poll neighbors: {Neighbors}", Neighbors);
-            await Task.WhenAll(Neighbors.Select(n => PollNeighborAsync(n, cancellationToken)));
-        }
-    }
-
-    private async Task PollNeighborAsync(string neighbor, CancellationToken cancellationToken)
-    {
-        Message? resp = null;
-        try
-        {
-            resp = await node.RpcAsync(neighbor, new Read(), timeout: _rpcTimeout, cancellationToken: cancellationToken);
-        }
-        catch (RpcFailedException ex)
-        {
-            logger.LogError(ex, "Read to node {Neighbor} failed", neighbor);
-            return;
-        }
-        var readOk = resp?.DeserializeAs<ReadOk>()?.Body;
-        if (readOk is not null)
-        {
-            var readMessages = readOk.ReadMessages;
-            logger.LogInformation("Received update from neighbor {Neighbor}: {Update}", neighbor, readMessages);
-            foreach (var m in readMessages)
-            {
-                _broadcastMessages.Add(m);
-            }
-        }
-    }
-
     private async Task BroadcastAsync(string neighbor, int broadcastMessage, CancellationToken cancellationToken)
     {
-        try
+        while (!cancellationToken.IsCancellationRequested)
         {
-            await node.RpcAsync(neighbor, new Broadcast(broadcastMessage), timeout: _rpcTimeout, cancellationToken: cancellationToken);
-        }
-        catch (RpcFailedException ex)
-        {
-            logger.LogError(ex, "Broadcast to node {Neighbor} failed", neighbor);
+            try
+            {
+                await node.RpcAsync(neighbor, new Broadcast(broadcastMessage), timeout: _rpcTimeout, cancellationToken: cancellationToken);
+                return;
+            }
+            catch (RpcFailedException ex)
+            {
+                logger.LogError(ex, "Broadcast to node {Neighbor} failed", neighbor);
+            }
+            await Task.Delay(_rpcRetryDelay, cancellationToken);
         }
     }
 
