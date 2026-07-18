@@ -212,7 +212,7 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
             _sendLock.Release();
         }
 
-        var cancellationTask = timeout != null ? Task.Delay(timeout.Value, cancellationToken) : Task.FromCanceled(cancellationToken);
+        var cancellationTask = Task.Delay(timeout ?? Timeout.InfiniteTimeSpan, cancellationToken);
         await Task.WhenAny([replyTask, cancellationTask]);
         if (replyTask.IsCompletedSuccessfully)
         {

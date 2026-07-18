@@ -14,11 +14,11 @@ internal class KvStoreClient(IMaelstromNode node, ILogger<IMaelstromNode> logger
     private readonly ILogger<IMaelstromNode> logger = logger;
     private readonly IMaelstromNode _node = node;
 
-    public async Task<U> ReadAsync<T, U>(T key)
+    public async Task<U> ReadAsync<T, U>(T key, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Reading key {key}", key);
         Read<T> read = new(key);
-        var response = await _node.RpcAsync(_serviceName, read);
+        var response = await _node.RpcAsync(_serviceName, read, cancellationToken: cancellationToken);
         if (response.Body.Type == ErrorBody.ErrorBodyType)
         {
             var error = response.DeserializeAs<ErrorBody>().Body;
@@ -36,11 +36,11 @@ internal class KvStoreClient(IMaelstromNode node, ILogger<IMaelstromNode> logger
         return readOk.Value;
     }
 
-    public async Task<U> ReadOrDefaultAsync<T, U>(T key, U defaultVal)
+    public async Task<U> ReadOrDefaultAsync<T, U>(T key, U defaultVal, CancellationToken cancellationToken = default)
     {
         try
         {
-            return await ReadAsync<T, U>(key);
+            return await ReadAsync<T, U>(key, cancellationToken);
         }
         catch (KvStoreKeyNotFoundException)
         {
@@ -49,11 +49,11 @@ internal class KvStoreClient(IMaelstromNode node, ILogger<IMaelstromNode> logger
         }
     }
 
-    public async Task WriteAsync<T, U>(T key, U value)
+    public async Task WriteAsync<T, U>(T key, U value, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Writing key {key}: {value}", key, value);
         Write<T, U> write = new(key, value);
-        var response = await _node.RpcAsync(_serviceName, write);
+        var response = await _node.RpcAsync(_serviceName, write, cancellationToken: cancellationToken);
         switch (response.Body.Type)
         {
             case ErrorBody.ErrorBodyType:
@@ -69,11 +69,11 @@ internal class KvStoreClient(IMaelstromNode node, ILogger<IMaelstromNode> logger
         }
     }
 
-    public async Task CasAsync<T, U>(T key, U from, U to, bool createIfNotExists = false)
+    public async Task CasAsync<T, U>(T key, U from, U to, bool createIfNotExists = false, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("CAS key {key} from {from} to {to}", key, from, to);
         Cas<T, U> cas = new(key, from, to, createIfNotExists);
-        var response = await _node.RpcAsync(_serviceName, cas);
+        var response = await _node.RpcAsync(_serviceName, cas, cancellationToken: cancellationToken);
         switch (response.Body.Type)
         {
             case ErrorBody.ErrorBodyType:
@@ -95,17 +95,17 @@ internal class KvStoreClient(IMaelstromNode node, ILogger<IMaelstromNode> logger
         }
     }
 
-    public async Task<U> SafeUpdateAsync<T, U>(T key, Func<U, U> translation, U defaultVal, int maxAttempts = _defaultMaxAttempts, int delayMs = _defaultDelay)
+    public async Task<U> SafeUpdateAsync<T, U>(T key, Func<U, U> translation, U defaultVal, int maxAttempts = _defaultMaxAttempts, int delayMs = _defaultDelay, CancellationToken cancellationToken = default)
     {
         int attempts = 1;
         while (attempts <= maxAttempts)
         {
-            U latestValue = await ReadOrDefaultAsync(key, defaultVal);
+            U latestValue = await ReadOrDefaultAsync(key, defaultVal, cancellationToken);
             var newValue = translation(latestValue);
             logger.LogDebug("Update {key} from {old} to {new}, attempt {attempts}", key, latestValue, newValue, attempts);
             try
             {
-                await CasAsync(key, latestValue, newValue, createIfNotExists: true);
+                await CasAsync(key, latestValue, newValue, createIfNotExists: true, cancellationToken: cancellationToken);
             }
             catch (KvStoreCasPreconditionFailed)
             {

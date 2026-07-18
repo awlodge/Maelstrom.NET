@@ -11,25 +11,30 @@ internal class Counter(ILogger<Counter> logger, IMaelstromNode node) : Workload(
     private readonly ILogger<Counter> logger = logger;
 
     [MaelstromHandler(Read.ReadType)]
-    public async Task HandleRead(Message message)
+    public async Task HandleRead(Message message, CancellationToken cancellationToken)
     {
         logger.LogDebug("Received counter read");
 
         // Increment by 0 to force read of latest value from store.
-        var latestValue = await IncrementValue(0);
+        var latestValue = await IncrementValue(0, cancellationToken);
         logger.LogInformation("Counter read OK, value {value}", latestValue);
         await node.ReplyAsync(message, new ReadOk<int>(latestValue));
     }
 
     [MaelstromHandler(Add.AddType)]
-    public async Task HandleAdd(Message message)
+    public async Task HandleAdd(Message message, CancellationToken cancellationToken)
     {
         var add = message.DeserializeAs<Add>().Body;
         logger.LogDebug("Received counter add {delta}", add.Delta);
         await node.ReplyAsync(message, new AddOk());
-        var latestValue = await IncrementValue(add.Delta);
+        var latestValue = await IncrementValue(add.Delta, cancellationToken);
         logger.LogInformation("Counter incremented by {delta} to {val}", add.Delta, latestValue);
     }
 
-    private async Task<int> IncrementValue(int delta) => await node.SeqKvStoreClient.SafeUpdateAsync(_counterKey, v => v + delta, 0, maxAttempts: _maxAttempts);
+    private async Task<int> IncrementValue(int delta, CancellationToken cancellationToken) =>
+        await node.SeqKvStoreClient.SafeUpdateAsync(_counterKey,
+            v => v + delta,
+            0,
+            maxAttempts: _maxAttempts,
+            cancellationToken: cancellationToken);
 }
