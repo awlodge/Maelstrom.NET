@@ -6,11 +6,12 @@ using Microsoft.Extensions.Options;
 
 namespace BroadcastService;
 
-internal class BroadcastService(ILogger<BroadcastService> logger, IMaelstromNode node, IOptions<BroadcastServiceOptions> options) : Workload(node)
+internal class BroadcastService(ILogger<BroadcastService> logger, IMaelstromNode _node, IOptions<BroadcastServiceOptions> options) : Workload(_node)
 {
     private readonly ILogger<BroadcastService> logger = logger;
     private readonly HashSet<int> _broadcastMessages = [];
     private Dictionary<string, string[]> _topology = [];
+    private readonly TopologyStrategy _broadcastTopologyStrategy = options.Value.BroadcastTopologyStrategy;
     private readonly TimeSpan _rpcTimeout = options.Value.RpcTimeout;
     private readonly TimeSpan _rpcRetryDelay = options.Value.RpcRetryDelay;
 
@@ -19,14 +20,13 @@ internal class BroadcastService(ILogger<BroadcastService> logger, IMaelstromNode
     {
         var broadcastMessage = message.DeserializeAs<Broadcast>().Body.BroadcastMessage;
         logger.LogInformation("Received broadcast message: {BroadcastMessage}", broadcastMessage);
-        await Node.ReplyAsync(message, new BroadcastOk(), cancellationToken);
-        if (_broadcastMessages.Contains(broadcastMessage))
+        await node.ReplyAsync(message, new BroadcastOk(), cancellationToken);
+        if (!_broadcastMessages.Add(broadcastMessage))
         {
             logger.LogInformation("Message already seen, ignoring broadcast");
         }
         else
         {
-            _broadcastMessages.Add(broadcastMessage);
             var nextHops = GetNextHops(message);
             if (nextHops.Count > 0)
             {
@@ -41,7 +41,7 @@ internal class BroadcastService(ILogger<BroadcastService> logger, IMaelstromNode
     public async Task HandleRead(Message message, CancellationToken cancellationToken)
     {
         logger.LogInformation("Received read request");
-        await Node.ReplyAsync(message, new ReadOk([.. _broadcastMessages]));
+        await node.ReplyAsync(message, new ReadOk([.. _broadcastMessages]), cancellationToken);
     }
 
     [MaelstromHandler(Topology.TopologyType)]
@@ -52,11 +52,11 @@ internal class BroadcastService(ILogger<BroadcastService> logger, IMaelstromNode
         var topology = topologyMessage.TopologyData;
         if (topology == null)
         {
-            await Node.ErrorAsync(message, ErrorCodes.MalformedRequest, "Malformed topology data");
+            await node.ErrorAsync(message, ErrorCodes.MalformedRequest, "Malformed topology data", cancellationToken);
             throw new Exception($"Malformed topology data: {topologyMessage.TopologyData}");
         }
         _topology = topology;
-        await Node.ReplyAsync(message, new TopologyOk());
+        await node.ReplyAsync(message, new TopologyOk(), cancellationToken);
     }
 
     private async Task BroadcastAsync(string neighbor, int broadcastMessage, CancellationToken cancellationToken)
@@ -76,9 +76,14 @@ internal class BroadcastService(ILogger<BroadcastService> logger, IMaelstromNode
         }
     }
 
-    private List<string> Neighbors => _topology.TryGetValue(Node.NodeId, out var neighbors)
-        ? [.. neighbors]
-        : [];
+    private List<string> Neighbors => _broadcastTopologyStrategy switch
+    {
+        TopologyStrategy.AllNodes => node.NodeIds.Where(n => n != node.NodeId).ToList(),
+        TopologyStrategy.UseProvidedTopology => _topology.TryGetValue(node.NodeId, out var neighbors)
+            ? [.. neighbors]
+            : [],
+        _ => throw new ArgumentOutOfRangeException($"Unexpected TopologyStrategy {_broadcastTopologyStrategy}", nameof(_broadcastTopologyStrategy))
+    };
 
     private List<string> GetNextHops(Message message)
     {

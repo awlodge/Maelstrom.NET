@@ -12,7 +12,7 @@ internal class KvStore(IMaelstromTestClient testClient) : IKvStore
         var read = await testClient.ReadOutputAsync<Read<T>>(timeout);
         if (read is null || read.Body.Key is null)
         {
-            throw new ArgumentNullException("Failed to deserialize read", nameof(read));
+            throw new InvalidCastException("Failed to deserialize read");
         }
         if (read.Dest != serviceName)
         {
@@ -43,7 +43,7 @@ internal class KvStore(IMaelstromTestClient testClient) : IKvStore
         var cas = await testClient.ReadOutputAsync<Cas<T, U>>(timeout);
         if (cas is null || cas.Body.Key is null)
         {
-            throw new ArgumentNullException("Failed to deserialize CAS", nameof(cas));
+            throw new InvalidCastException("Failed to deserialize CAS");
         }
         if (cas.Dest != serviceName)
         {

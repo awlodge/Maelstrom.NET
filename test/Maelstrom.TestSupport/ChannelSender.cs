@@ -3,14 +3,9 @@ using System.Threading.Channels;
 
 namespace Maelstrom.TestSupport;
 
-internal class ChannelSender : ISender
+internal class ChannelSender(Channel<string> output) : ISender
 {
-    private readonly ChannelWriter<string> _writer;
-
-    public ChannelSender(Channel<string> output)
-    {
-        _writer = output.Writer;
-    }
+    private readonly ChannelWriter<string> _writer = output.Writer;
 
     public void Dispose()
     {

@@ -6,7 +6,7 @@ using System.Collections.Concurrent;
 
 namespace KafkaService;
 
-internal class KafkaLog(ILogger<KafkaLog> logger, IMaelstromNode node) : Workload(node)
+internal class KafkaLog(ILogger<KafkaLog> logger, IMaelstromNode _node) : Workload(_node)
 {
     private const int _maxReturnedMessages = 10;
     private const int _maxAttempts = 10;
@@ -20,7 +20,7 @@ internal class KafkaLog(ILogger<KafkaLog> logger, IMaelstromNode node) : Workloa
         logger.LogInformation("Received send request: {Key} {Message}", send.Key, send.Message);
         var offset = await IncrementOffset(send.Key, cancellationToken);
         await WriteLog(send.Key, offset, send.Message, cancellationToken);
-        await node.ReplyAsync(message, new SendOk(offset));
+        await node.ReplyAsync(message, new SendOk(offset), cancellationToken);
     }
 
     [MaelstromHandler(Poll.PollType)]
@@ -32,7 +32,7 @@ internal class KafkaLog(ILogger<KafkaLog> logger, IMaelstromNode node) : Workloa
         await Task.WhenAll(
             poll.Offsets
             .Select(async kv => messages[kv.Key] = await GetLogs(kv.Key, kv.Value, cancellationToken)));
-        await node.ReplyAsync(message, new PollOk(messages.ToDictionary()));
+        await node.ReplyAsync(message, new PollOk(messages.ToDictionary()), cancellationToken);
     }
 
     [MaelstromHandler(CommitOffsets.CommitOffsetsType)]
@@ -40,7 +40,7 @@ internal class KafkaLog(ILogger<KafkaLog> logger, IMaelstromNode node) : Workloa
     {
         var commitOffsets = message.DeserializeAs<CommitOffsets>().Body;
         logger.LogInformation("Received commit offsets request: {Offsets}", commitOffsets.Offsets);
-        await node.ReplyAsync(message, new CommitOffsetsOk());
+        await node.ReplyAsync(message, new CommitOffsetsOk(), cancellationToken);
         await Task.WhenAll(
             commitOffsets.Offsets
             .Select(kv => UpdateCommittedOffset(kv.Key, kv.Value, cancellationToken)));
@@ -56,7 +56,7 @@ internal class KafkaLog(ILogger<KafkaLog> logger, IMaelstromNode node) : Workloa
                 .Select(async k => new KeyValuePair<string, int>(k, await GetCommittedOffset(k, cancellationToken)))))
             .ToDictionary();
 
-        await node.ReplyAsync(message, new ListCommittedOffsetsOk(committedOffsets));
+        await node.ReplyAsync(message, new ListCommittedOffsetsOk(committedOffsets), cancellationToken);
     }
 
     private static string GetOffsetKey(string key) => $"offsets/{key}";

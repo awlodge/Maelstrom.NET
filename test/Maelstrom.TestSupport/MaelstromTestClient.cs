@@ -13,7 +13,7 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable, IMaelstromTestCl
     private readonly Channel<string> _nodeOutput = Channel.CreateUnbounded<string>();
     private readonly IHost _host;
     private Task? _runner = null;
-    private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+    private readonly CancellationTokenSource _cancellationTokenSource = new();
     private readonly KvStore _kvStore;
 
     private const string _srcNodeId = "c1";
@@ -106,6 +106,7 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable, IMaelstromTestCl
 
     public async ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         await StopAsync();
         _host.Dispose();
     }

@@ -5,13 +5,13 @@ using Microsoft.Extensions.Logging;
 
 namespace Maelstrom.Internals;
 
-internal class KvStoreClient(IMaelstromNode node, ILogger<IMaelstromNode> logger, string serviceName) : IKvStoreClient
+internal class KvStoreClient(IMaelstromNode node, ILogger<KvStoreClient> logger, string serviceName) : IKvStoreClient
 {
     private const int _defaultMaxAttempts = 10;
     private const int _defaultDelay = 10;
 
     private readonly string _serviceName = serviceName;
-    private readonly ILogger<IMaelstromNode> logger = logger;
+    private readonly ILogger<KvStoreClient> logger = logger;
     private readonly IMaelstromNode _node = node;
 
     public async Task<U> ReadAsync<T, U>(T key, CancellationToken cancellationToken = default)
@@ -110,7 +110,7 @@ internal class KvStoreClient(IMaelstromNode node, ILogger<IMaelstromNode> logger
             catch (KvStoreCasPreconditionFailed)
             {
                 logger.LogWarning("CAS failed, waiting and retrying");
-                await Task.Delay(delayMs + new Random().Next(-2, 2));
+                await Task.Delay(delayMs + new Random().Next(-2, 2), cancellationToken);
                 attempts++;
                 continue;
             }

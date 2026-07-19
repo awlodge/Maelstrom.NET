@@ -29,13 +29,13 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
 
     internal delegate Task MaelstromHandler(Message msg, CancellationToken cancellationToken = default);
 
-    public MaelstromNode(ILogger<MaelstromNode> logger, IReceiver receiver, ISender sender)
+    public MaelstromNode(ILogger<MaelstromNode> logger, IReceiver receiver, ISender sender, IKvStoreClientFactory kvStoreClientFactory)
     {
         this.logger = logger;
         _receiver = receiver;
         _sender = sender;
-        _seqKvStoreClient = new(this, this.logger, "seq-kv");
-        _linKvStoreClient = new(this, this.logger, "lin-kv");
+        _seqKvStoreClient = kvStoreClientFactory.Create("seq-kv", this);
+        _linKvStoreClient = kvStoreClientFactory.Create("lin-kv", this);
     }
 
     internal void AddMessageHandlers(IDictionary<string, MaelstromHandler> handlers)
@@ -97,13 +97,13 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
                 catch (Exception ex)
                 {
                     logger.LogError(ex, "Unexpected error handling message of type {messageType}", message.Body.Type);
-                    await ErrorAsync(message, ErrorCodes.Crash, $"Unexpected error handling message: {ex}");
+                    await ErrorAsync(message, ErrorCodes.Crash, $"Unexpected error handling message: {ex}", cancellationToken);
                 }
             }
             else
             {
                 logger.LogError("Message type {MessageType} not supported", message.Body.Type);
-                await ErrorAsync(message, ErrorCodes.NotSupported, $"Message type {message.Body.Type} not supported");
+                await ErrorAsync(message, ErrorCodes.NotSupported, $"Message type {message.Body.Type} not supported", cancellationToken);
             }
         }
         catch (Exception ex)
@@ -120,16 +120,16 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
         {
             throw new Exception("Failed to receive init message");
         }
-        if (message.Body.Type != "init")
+        if (message.Body.Type != Init.InitType)
         {
-            await ErrorAsync(message, ErrorCodes.MalformedRequest, "First message must be an init message");
+            await ErrorAsync(message, ErrorCodes.MalformedRequest, "First message must be an init message", cancellationToken);
             throw new Exception("First message must be an init message");
         }
         var init = message.DeserializeAs<Init>().Body;
         _nodeId = init.NodeId;
         _nodeIds = init.NodeIds;
         logger.LogInformation("Node initialized. Node ID: {NodeId}", NodeId);
-        await ReplyAsync(message, new InitOk());
+        await ReplyAsync(message, new InitOk(), cancellationToken);
     }
 
     public void Dispose()
@@ -160,7 +160,7 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
 
     public async Task SendAsync<T>(string destination, T body, CancellationToken cancellationToken = default) where T : MessageBody
     {
-        await _sendLock.WaitAsync();
+        await _sendLock.WaitAsync(cancellationToken);
         try
         {
             body.MsgId = _msgId;
@@ -195,7 +195,7 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
     public async Task<Message> RpcAsync<T>(string destination, T body, TimeSpan? timeout = null, CancellationToken cancellationToken = default) where T : MessageBody
     {
         Task<Message> replyTask;
-        await _sendLock.WaitAsync();
+        await _sendLock.WaitAsync(cancellationToken);
         var rpcMsgId = _msgId;
         try
         {

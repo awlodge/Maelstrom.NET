@@ -2,5 +2,5 @@
 
 public class Workload(IMaelstromNode node)
 {
-    protected IMaelstromNode Node => node;
+    protected readonly IMaelstromNode node = node;
 }

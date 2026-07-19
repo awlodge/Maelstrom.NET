@@ -6,18 +6,18 @@ using TransactionRwRegisterService.Models.MessageBodies;
 
 namespace TransactionRwRegisterService;
 
-internal class TransactionRwRegister(ILogger<TransactionRwRegister> logger, IMaelstromNode node) : Workload(node)
+internal class TransactionRwRegister(ILogger<TransactionRwRegister> logger, IMaelstromNode _node) : Workload(_node)
 {
     private const string _transactionIdKey = "transactionId";
     private readonly ILogger<TransactionRwRegister> logger = logger;
     private readonly SemaphoreSlim _getTxnIdLock = new(1);
 
-    [MaelstromHandler(Models.MessageBodies.Transaction.TxnType)]
+    [MaelstromHandler(Transaction.TxnType)]
     public async Task HandleTransaction(Message message, CancellationToken cancellationToken)
     {
-        var transaction = message.DeserializeAs<Models.MessageBodies.Transaction>().Body;
+        var transaction = message.DeserializeAs<Transaction>().Body;
         var completedTransactions = await ExecuteTransactions(transaction.Operations, cancellationToken);
-        await node.ReplyAsync(message, new TransactionOk(completedTransactions));
+        await node.ReplyAsync(message, new TransactionOk(completedTransactions), cancellationToken);
     }
 
     private async Task<List<Operation>> ExecuteTransactions(List<Operation> operations, CancellationToken cancellationToken)
@@ -154,10 +154,10 @@ internal class TransactionRwRegister(ILogger<TransactionRwRegister> logger, IMae
         await node.LinKvStoreClient.WriteAsync(GetRemoteKey(key, transactionId), val, cancellationToken);
 
     private async Task CommitTransaction(int transactionId, CancellationToken cancellationToken) =>
-        await Node.LinKvStoreClient.WriteAsync(GetCommittedTransactionKey(transactionId), true, cancellationToken);
+        await node.LinKvStoreClient.WriteAsync(GetCommittedTransactionKey(transactionId), true, cancellationToken);
 
     private async Task<bool> IsTransactionCommitted(int transactionId, CancellationToken cancellationToken) =>
-        await Node.LinKvStoreClient.ReadOrDefaultAsync(GetCommittedTransactionKey(transactionId), false, cancellationToken);
+        await node.LinKvStoreClient.ReadOrDefaultAsync(GetCommittedTransactionKey(transactionId), false, cancellationToken);
 
     private static string GetRemoteKey(int key, int transactionId) => $"data/{key}/{transactionId}";
 

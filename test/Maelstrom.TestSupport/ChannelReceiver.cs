@@ -3,14 +3,9 @@ using System.Threading.Channels;
 
 namespace Maelstrom.TestSupport;
 
-internal class ChannelReceiver : IReceiver
+internal class ChannelReceiver(Channel<string> input) : IReceiver
 {
-    private readonly ChannelReader<string> _reader;
-
-    public ChannelReceiver(Channel<string> input)
-    {
-        _reader = input.Reader;
-    }
+    private readonly ChannelReader<string> _reader = input.Reader;
 
     public void Dispose()
     {

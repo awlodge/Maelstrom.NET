@@ -123,7 +123,7 @@ namespace BroadcastServiceTests
             Assert.Equal([1], readResponse.Body.ReadMessages);
         }
 
-        private static BroadcastOk GetBroadcastResponse(Broadcast request) => new BroadcastOk()
+        private static BroadcastOk GetBroadcastResponse(Broadcast request) => new()
         {
             InReplyTo = request.MsgId
         };
