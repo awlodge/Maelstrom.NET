@@ -84,7 +84,7 @@ internal class KafkaLog(ILogger<KafkaLog> logger, IMaelstromNode node) : Workloa
     {
         string committedKey = GetCommittedKey(key);
         int attempts = 1;
-        while (attempts <= _maxAttempts && !cancellationToken.IsCancellationRequested)
+        while (!cancellationToken.IsCancellationRequested)
         {
             logger.LogDebug("Get counter {key}, attempt {attempts}", committedKey, attempts);
             var offset = await GetCounter(committedKey, cancellationToken);
@@ -109,9 +109,10 @@ internal class KafkaLog(ILogger<KafkaLog> logger, IMaelstromNode node) : Workloa
             logger.LogDebug("Increment succeeded, new {key} = {offset}", key, committedKey);
             return;
         }
-
-        logger.LogError("Increment offset failed after {attempts} attempts", _maxAttempts);
-        throw new Exception("Increment offset failed after max attempts");
+        if (cancellationToken.IsCancellationRequested)
+        {
+            throw new TaskCanceledException("UpdateCommittedOffset failed: task was cancelled");
+        }
     }
 
     private async Task<int> GetCounter(string key, CancellationToken cancellationToken) =>
