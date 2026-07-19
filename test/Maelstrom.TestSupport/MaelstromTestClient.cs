@@ -7,13 +7,14 @@ using System.Threading.Channels;
 
 namespace Maelstrom.TestSupport;
 
-public class MaelstromTestClient<TWorkload> : IAsyncDisposable where TWorkload : Workload
+public class MaelstromTestClient<TWorkload> : IAsyncDisposable, IMaelstromTestClient where TWorkload : Workload
 {
     private readonly Channel<string> _nodeInput = Channel.CreateUnbounded<string>();
     private readonly Channel<string> _nodeOutput = Channel.CreateUnbounded<string>();
     private readonly IHost _host;
     private Task? _runner = null;
     private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+    private readonly KvStore _kvStore;
 
     private const string _srcNodeId = "c1";
     private const string _dstNodeId = "n1";
@@ -24,8 +25,11 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable where TWorkload :
     public string SrcNodeId => _srcNodeId;
     public string DstNodeId => _dstNodeId;
 
+    public IKvStore KvStore => _kvStore;
+
     public MaelstromTestClient(Action<IHostApplicationBuilder>? configure = null)
     {
+        _kvStore = new KvStore(this);
         var receiver = new ChannelReceiver(_nodeInput);
         var sender = new ChannelSender(_nodeOutput);
 
@@ -60,6 +64,22 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable where TWorkload :
         var rawMessage = await _nodeOutput.Reader.ReadAsync(cancellationSource.Token);
         var message = JsonSerializer.Deserialize<Message<MessageBody>>(rawMessage) ?? throw new InvalidOperationException($"Failed to deserialize: {rawMessage}");
         return message.DeserializeAs<T>();
+    }
+
+    public async Task ErrorAsync(Message originalMessage, ErrorCodes errorCode, string errorMessage)
+    {
+        var body = new ErrorBody(errorCode, errorMessage);
+        await ReplyAsync(originalMessage, body);
+    }
+
+    public async Task ReplyAsync(Message originalMessage, MessageBody body)
+    {
+        if (originalMessage.Body.MsgId == null)
+        {
+            throw new Exception("For reply, original message must have a MsgId");
+        }
+        body.InReplyTo = (int)originalMessage.Body.MsgId;
+        await SendAsync(body, originalMessage.Dest, originalMessage.Src);
     }
 
     public async Task StartAsync()
