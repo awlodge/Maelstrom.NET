@@ -22,7 +22,7 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable, IMaelstromTestCl
 
     public TimeSpan DefaultReceiveTimeOut { get; init; } = TimeSpan.FromSeconds(1);
 
-    public string SrcNodeId => _srcNodeId;
+    public string NodeId => _srcNodeId;
     public string DstNodeId => _dstNodeId;
 
     public IKvStore KvStore => _kvStore;
@@ -42,7 +42,9 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable, IMaelstromTestCl
         _host = builder.Build();
     }
 
-    public async Task SendAsync<T>(T body) where T : MessageBody => await SendAsync(body, SrcNodeId, DstNodeId);
+    public async Task SendAsync<T>(T body) where T : MessageBody => await SendAsync(DstNodeId, body);
+
+    public async Task SendAsync<T>(string destination, T body, CancellationToken cancellationToken = default) where T : MessageBody => await SendAsync(body, NodeId, destination);
 
     public async Task SendAsync<T>(T body, string src, string dst) where T : MessageBody
     {
@@ -53,7 +55,7 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable, IMaelstromTestCl
         await _nodeInput.Writer.WriteAsync(rawMessage);
     }
 
-    public async Task<Message<T>> ReadOutputAsync<T>(TimeSpan timeout = default) where T : MessageBody
+    public async Task<Message> RecvAsync(TimeSpan timeout = default)
     {
         if (timeout == default)
         {
@@ -62,24 +64,19 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable, IMaelstromTestCl
         var cancellationSource = new CancellationTokenSource();
         cancellationSource.CancelAfter(timeout);
         var rawMessage = await _nodeOutput.Reader.ReadAsync(cancellationSource.Token);
-        var message = JsonSerializer.Deserialize<Message<MessageBody>>(rawMessage) ?? throw new InvalidOperationException($"Failed to deserialize: {rawMessage}");
+        return JsonSerializer.Deserialize<Message<MessageBody>>(rawMessage) ?? throw new InvalidOperationException($"Failed to deserialize: {rawMessage}");
+    }
+
+    public async Task<Message> RpcAsync<T>(string destination, T body, TimeSpan? timeout = null, CancellationToken cancellationToken = default) where T : MessageBody
+    {
+        await SendAsync(destination, body, cancellationToken);
+        return await RecvAsync(timeout ?? default);
+    }
+
+    public async Task<Message<T>> ReadOutputAsync<T>(TimeSpan timeout = default) where T : MessageBody
+    {
+        var message = await RecvAsync(timeout);
         return message.DeserializeAs<T>();
-    }
-
-    public async Task ErrorAsync(Message originalMessage, ErrorCodes errorCode, string errorMessage)
-    {
-        var body = new ErrorBody(errorCode, errorMessage);
-        await ReplyAsync(originalMessage, body);
-    }
-
-    public async Task ReplyAsync(Message originalMessage, MessageBody body)
-    {
-        if (originalMessage.Body.MsgId == null)
-        {
-            throw new Exception("For reply, original message must have a MsgId");
-        }
-        body.InReplyTo = (int)originalMessage.Body.MsgId;
-        await SendAsync(body, originalMessage.Dest, originalMessage.Src);
     }
 
     public async Task StartAsync()
@@ -119,7 +116,6 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable, IMaelstromTestCl
             NodeId = DstNodeId,
             NodeIds = []
         };
-        await SendAsync(init);
-        await ReadOutputAsync<InitOk>();
+        await RpcAsync(DstNodeId, init);
     }
 }
