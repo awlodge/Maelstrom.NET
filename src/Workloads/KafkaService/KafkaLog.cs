@@ -6,7 +6,7 @@ using System.Collections.Concurrent;
 
 namespace KafkaService;
 
-internal class KafkaLog(ILogger<KafkaLog> logger, IWorkloadFactory workloadFactory) : Workload(workloadFactory)
+internal class KafkaLog(ILogger<KafkaLog> logger, IWorkloadBuilder builder) : Workload(builder)
 {
     private const int _maxReturnedMessages = 10;
     private const int _maxAttempts = 10;

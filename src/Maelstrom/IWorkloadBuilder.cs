@@ -2,7 +2,7 @@
 
 namespace Maelstrom;
 
-public interface IWorkloadFactory
+public interface IWorkloadBuilder
 {
     internal IMaelstromNode Node { get; }
     internal IKvStoreClientFactory KvStoreClientFactory { get; }

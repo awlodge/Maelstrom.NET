@@ -6,7 +6,7 @@ using TransactionRwRegisterService.Models.MessageBodies;
 
 namespace TransactionRwRegisterService;
 
-internal class TransactionRwRegister(ILogger<TransactionRwRegister> logger, IWorkloadFactory workloadFactory) : Workload(workloadFactory)
+internal class TransactionRwRegister(ILogger<TransactionRwRegister> logger, IWorkloadBuilder builder) : Workload(builder)
 {
     private const string _transactionIdKey = "transactionId";
     private readonly ILogger<TransactionRwRegister> logger = logger;

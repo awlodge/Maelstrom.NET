@@ -6,10 +6,10 @@ public class Workload
     protected readonly IKvStoreClient seqKvStoreClient;
     protected readonly IKvStoreClient linKvStoreClient;
 
-    public Workload(IWorkloadFactory workloadFactory)
+    public Workload(IWorkloadBuilder builder)
     {
-        node = workloadFactory.Node;
-        seqKvStoreClient = workloadFactory.KvStoreClientFactory.Create("seq-kv", node);
-        linKvStoreClient = workloadFactory.KvStoreClientFactory.Create("lin-kv", node);
+        node = builder.Node;
+        seqKvStoreClient = builder.KvStoreClientFactory.Create("seq-kv", node);
+        linKvStoreClient = builder.KvStoreClientFactory.Create("lin-kv", node);
     }
 }

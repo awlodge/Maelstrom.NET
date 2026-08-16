@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 
 namespace BroadcastService;
 
-internal class BroadcastService(ILogger<BroadcastService> logger, IWorkloadFactory workloadFactory, IOptions<BroadcastServiceOptions> options) : Workload(workloadFactory)
+internal class BroadcastService(ILogger<BroadcastService> logger, IWorkloadBuilder builder, IOptions<BroadcastServiceOptions> options) : Workload(builder)
 {
     private readonly ILogger<BroadcastService> logger = logger;
     private readonly HashSet<int> _broadcastMessages = [];

@@ -4,7 +4,7 @@ using Maelstrom.Models;
 
 namespace CounterService;
 
-internal class Counter(ILogger<Counter> logger, IWorkloadFactory workloadFactory) : Workload(workloadFactory)
+internal class Counter(ILogger<Counter> logger, IWorkloadBuilder builder) : Workload(builder)
 {
     private const string _counterKey = "counter";
     private const int _maxAttempts = 10;
