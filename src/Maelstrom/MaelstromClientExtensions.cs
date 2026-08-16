@@ -3,7 +3,7 @@ using Maelstrom.Models.MessageBodies;
 
 namespace Maelstrom;
 
-public static class MaelstromExtensions
+public static class MaelstromClientExtensions
 {
     public static async Task ReplyAsync(this IMaelstromClient client, Message originalMessage, MessageBody body, CancellationToken cancellationToken = default)
     {
