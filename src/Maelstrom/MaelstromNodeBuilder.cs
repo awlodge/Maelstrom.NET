@@ -29,6 +29,7 @@ public static class MaelstromNodeBuilder
         services.TryAddSingleton<IKvStoreClientFactory, KvStoreClientFactory>();
         services.TryAddSingleton<MaelstromNode>();
         services.TryAddSingleton<IMaelstromNode>(sp => sp.GetRequiredService<MaelstromNode>());
+        services.TryAddSingleton<IWorkloadFactory, WorkloadFactory>();
         services.AddHostedService<MaelstromNodeRunner>();
         return services;
     }
