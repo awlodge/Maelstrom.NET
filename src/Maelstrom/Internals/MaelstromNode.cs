@@ -7,15 +7,13 @@ using System.Text.Json;
 
 namespace Maelstrom.Internals;
 
-internal class MaelstromNode : IMaelstromNode, IDisposable
+internal class MaelstromNode(ILogger<MaelstromNode> logger, IReceiver receiver, ISender sender) : IMaelstromNode, IDisposable
 {
-    private readonly ILogger<MaelstromNode> logger;
-    private readonly IReceiver _receiver;
-    private readonly ISender _sender;
+    private readonly ILogger<MaelstromNode> logger = logger;
+    private readonly IReceiver _receiver = receiver;
+    private readonly ISender _sender = sender;
     private string _nodeId = "";
     private string[] _nodeIds = [];
-    private readonly KvStoreClient _seqKvStoreClient;
-    private readonly KvStoreClient _linKvStoreClient;
 
     private int _msgId = 0;
     private readonly ConcurrentDictionary<string, MaelstromHandler> _messageHandlers = [];
@@ -24,19 +22,8 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
 
     public string NodeId => _nodeId;
     public string[] NodeIds => _nodeIds;
-    public IKvStoreClient SeqKvStoreClient => _seqKvStoreClient;
-    public IKvStoreClient LinKvStoreClient => _linKvStoreClient;
 
     internal delegate Task MaelstromHandler(Message msg, CancellationToken cancellationToken = default);
-
-    public MaelstromNode(ILogger<MaelstromNode> logger, IReceiver receiver, ISender sender, IKvStoreClientFactory kvStoreClientFactory)
-    {
-        this.logger = logger;
-        _receiver = receiver;
-        _sender = sender;
-        _seqKvStoreClient = kvStoreClientFactory.Create("seq-kv", this);
-        _linKvStoreClient = kvStoreClientFactory.Create("lin-kv", this);
-    }
 
     internal void AddMessageHandlers(IDictionary<string, MaelstromHandler> handlers)
     {
@@ -67,6 +54,7 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
             {
                 await Task.Delay(1000, stoppingToken);
             }
+            activeHandlers.RemoveWhere(t => t.IsCompleted);
         }
         logger.LogInformation("Waiting for active tasks to complete...");
         await Task.WhenAll(activeHandlers);
@@ -97,13 +85,13 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
                 catch (Exception ex)
                 {
                     logger.LogError(ex, "Unexpected error handling message of type {messageType}", message.Body.Type);
-                    await ErrorAsync(message, ErrorCodes.Crash, $"Unexpected error handling message: {ex}", cancellationToken);
+                    await this.ErrorAsync(message, ErrorCodes.Crash, $"Unexpected error handling message: {ex}", cancellationToken);
                 }
             }
             else
             {
                 logger.LogError("Message type {MessageType} not supported", message.Body.Type);
-                await ErrorAsync(message, ErrorCodes.NotSupported, $"Message type {message.Body.Type} not supported", cancellationToken);
+                await this.ErrorAsync(message, ErrorCodes.NotSupported, $"Message type {message.Body.Type} not supported", cancellationToken);
             }
         }
         catch (Exception ex)
@@ -122,14 +110,14 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
         }
         if (message.Body.Type != Init.InitType)
         {
-            await ErrorAsync(message, ErrorCodes.MalformedRequest, "First message must be an init message", cancellationToken);
+            await this.ErrorAsync(message, ErrorCodes.MalformedRequest, "First message must be an init message", cancellationToken);
             throw new Exception("First message must be an init message");
         }
         var init = message.DeserializeAs<Init>().Body;
         _nodeId = init.NodeId;
         _nodeIds = init.NodeIds;
         logger.LogInformation("Node initialized. Node ID: {NodeId}", NodeId);
-        await ReplyAsync(message, new InitOk(), cancellationToken);
+        await this.ReplyAsync(message, new InitOk(), cancellationToken);
     }
 
     public void Dispose()
@@ -174,22 +162,6 @@ internal class MaelstromNode : IMaelstromNode, IDisposable
         {
             _sendLock.Release();
         }
-    }
-
-    public async Task ReplyAsync(Message originalMessage, MessageBody body, CancellationToken cancellationToken = default)
-    {
-        if (originalMessage.Body.MsgId == null)
-        {
-            throw new Exception("For reply, original message must have a MsgId");
-        }
-        body.InReplyTo = (int)originalMessage.Body.MsgId;
-        await SendAsync(originalMessage.Src, body, cancellationToken);
-    }
-
-    public async Task ErrorAsync(Message originalMessage, ErrorCodes errorCode, string errorMessage, CancellationToken cancellationToken = default)
-    {
-        var body = new ErrorBody(errorCode, errorMessage);
-        await ReplyAsync(originalMessage, body, cancellationToken);
     }
 
     public async Task<Message> RpcAsync<T>(string destination, T body, TimeSpan? timeout = null, CancellationToken cancellationToken = default) where T : MessageBody

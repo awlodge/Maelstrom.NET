@@ -6,7 +6,7 @@ using System.Collections.Concurrent;
 
 namespace KafkaService;
 
-internal class KafkaLog(ILogger<KafkaLog> logger, IMaelstromNode _node) : Workload(_node)
+internal class KafkaLog(ILogger<KafkaLog> logger, IWorkloadFactory workloadFactory) : Workload(workloadFactory)
 {
     private const int _maxReturnedMessages = 10;
     private const int _maxAttempts = 10;
@@ -96,7 +96,7 @@ internal class KafkaLog(ILogger<KafkaLog> logger, IMaelstromNode _node) : Worklo
 
             try
             {
-                await node.LinKvStoreClient.CasAsync(committedKey, offset, value, createIfNotExists: true, cancellationToken: cancellationToken);
+                await linKvStoreClient.CasAsync(committedKey, offset, value, createIfNotExists: true, cancellationToken: cancellationToken);
             }
             catch (KvStoreCasPreconditionFailed)
             {
@@ -116,17 +116,17 @@ internal class KafkaLog(ILogger<KafkaLog> logger, IMaelstromNode _node) : Worklo
     }
 
     private async Task<int> GetCounter(string key, CancellationToken cancellationToken) =>
-        await node.LinKvStoreClient.ReadOrDefaultAsync(key, 0, cancellationToken);
+        await linKvStoreClient.ReadOrDefaultAsync(key, 0, cancellationToken);
 
     private async Task<int> IncrementCounter(string key, CancellationToken cancellationToken) =>
-        await node.LinKvStoreClient.SafeUpdateAsync(key, v => v + 1, 0, maxAttempts: _maxAttempts, cancellationToken: cancellationToken);
+        await linKvStoreClient.SafeUpdateAsync(key, v => v + 1, 0, maxAttempts: _maxAttempts, cancellationToken: cancellationToken);
 
     private static string GetLogKey(string key, int offset) => $"logs/{key}/{offset}";
 
     private async Task WriteLog(string key, int offset, int message, CancellationToken cancellationToken)
     {
         logger.LogDebug("Writing log: {Key} {Offset} {Message}", key, offset, message);
-        await node.SeqKvStoreClient.WriteAsync(GetLogKey(key, offset), message, cancellationToken: cancellationToken);
+        await seqKvStoreClient.WriteAsync(GetLogKey(key, offset), message, cancellationToken: cancellationToken);
     }
 
     private async Task<List<List<int>>> GetLogs(string key, int offset, CancellationToken cancellationToken)
@@ -137,7 +137,7 @@ internal class KafkaLog(ILogger<KafkaLog> logger, IMaelstromNode _node) : Worklo
         {
             try
             {
-                var log = await node.SeqKvStoreClient.ReadAsync<string, int>(GetLogKey(key, offset), cancellationToken: cancellationToken);
+                var log = await seqKvStoreClient.ReadAsync<string, int>(GetLogKey(key, offset), cancellationToken: cancellationToken);
                 logs.Add([offset, log]);
                 offset++;
             }

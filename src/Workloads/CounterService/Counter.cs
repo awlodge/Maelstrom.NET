@@ -4,7 +4,7 @@ using Maelstrom.Models;
 
 namespace CounterService;
 
-internal class Counter(ILogger<Counter> logger, IMaelstromNode _node) : Workload(_node)
+internal class Counter(ILogger<Counter> logger, IWorkloadFactory workloadFactory) : Workload(workloadFactory)
 {
     private const string _counterKey = "counter";
     private const int _maxAttempts = 10;
@@ -32,7 +32,7 @@ internal class Counter(ILogger<Counter> logger, IMaelstromNode _node) : Workload
     }
 
     private async Task<int> IncrementValue(int delta, CancellationToken cancellationToken) =>
-        await node.SeqKvStoreClient.SafeUpdateAsync(_counterKey,
+        await seqKvStoreClient.SafeUpdateAsync(_counterKey,
             v => v + delta,
             0,
             maxAttempts: _maxAttempts,

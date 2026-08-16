@@ -6,9 +6,6 @@ public interface IMaelstromNode
 {
     string NodeId { get; }
     string[] NodeIds { get; }
-    IKvStoreClient SeqKvStoreClient { get; }
-    IKvStoreClient LinKvStoreClient { get; }
-    Task ErrorAsync(Message originalMessage, ErrorCodes errorCode, string errorMessage, CancellationToken cancellationToken = default);
-    Task ReplyAsync(Message originalMessage, MessageBody body, CancellationToken cancellationToken = default);
+    Task SendAsync<T>(string destination, T body, CancellationToken cancellationToken = default) where T : MessageBody;
     Task<Message> RpcAsync<T>(string destination, T body, TimeSpan? timeout = null, CancellationToken cancellationToken = default) where T : MessageBody;
 }

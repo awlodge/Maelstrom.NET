@@ -4,7 +4,7 @@ using Maelstrom.Models;
 
 namespace EchoService;
 
-internal class EchoServer(ILogger<EchoServer> logger, IMaelstromNode _node) : Workload(_node)
+internal class EchoServer(ILogger<EchoServer> logger, IWorkloadFactory workloadFactory) : Workload(workloadFactory)
 {
     private readonly ILogger<EchoServer> logger = logger;
 
