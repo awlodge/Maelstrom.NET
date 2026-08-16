@@ -32,7 +32,7 @@ public class CounterServiceTests : IAsyncLifetime
         var lookupResult = await _client.KvStore.ExpectReadAsync("seq-kv", "counter");
         Assert.False(lookupResult);
 
-        var casResult = await _client.KvStore.ExpecCasAsync("seq-kv", "counter", 0, 0, true);
+        var casResult = await _client.KvStore.ExpectCasAsync("seq-kv", "counter", 0, 0, true);
         Assert.True(casResult);
 
         var readResponse = await _client.ReadOutputAsync<ReadOk<int>>();
@@ -53,7 +53,7 @@ public class CounterServiceTests : IAsyncLifetime
         var lookupResult = await _client.KvStore.ExpectReadAsync("seq-kv", "counter");
         Assert.False(lookupResult);
 
-        var casResult = await _client.KvStore.ExpecCasAsync("seq-kv", "counter", 0, 1, true);
+        var casResult = await _client.KvStore.ExpectCasAsync("seq-kv", "counter", 0, 1, true);
         Assert.True(casResult);
 
         var read = new Read();
@@ -62,7 +62,7 @@ public class CounterServiceTests : IAsyncLifetime
         var lookupResult2 = await _client.KvStore.ExpectReadAsync("seq-kv", "counter");
         Assert.True(lookupResult2);
 
-        var casResult2 = await _client.KvStore.ExpecCasAsync("seq-kv", "counter", 1, 1, true);
+        var casResult2 = await _client.KvStore.ExpectCasAsync("seq-kv", "counter", 1, 1, true);
         Assert.True(casResult2);
 
         var readResponse = await _client.ReadOutputAsync<ReadOk<int>>();

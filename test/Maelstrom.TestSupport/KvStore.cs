@@ -36,7 +36,7 @@ internal class KvStore(IMaelstromTestClient testClient) : IKvStore
         return true;
     }
 
-    public async Task<bool> ExpecCasAsync<T, U>(string serviceName, T expectedKey, U expectedFrom, U expectedTo, bool expectedCreateIfNotExists, TimeSpan timeout = default)
+    public async Task<bool> ExpectCasAsync<T, U>(string serviceName, T expectedKey, U expectedFrom, U expectedTo, bool expectedCreateIfNotExists, TimeSpan timeout = default)
         where T : IComparable<T>
         where U : IComparable<U>
     {
