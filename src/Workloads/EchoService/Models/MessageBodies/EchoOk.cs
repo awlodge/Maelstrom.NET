@@ -4,15 +4,12 @@ using System.Text.Json.Serialization;
 
 namespace EchoService.Models.MessageBodies;
 
+[MessageType("echo_ok")]
 internal class EchoOk : MessageBody
 {
-    public const string EchoOkType = "echo_ok";
-
-    [JsonConstructor]
     [SetsRequiredMembers]
-    public EchoOk(string echoMessage) : base()
+    public EchoOk(string echoMessage)
     {
-        Type = EchoOkType;
         EchoMessage = echoMessage;
     }
 

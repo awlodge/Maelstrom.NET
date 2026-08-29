@@ -21,12 +21,12 @@ internal class MaelstromNode(ILogger<MaelstromNode> logger, IReceiver receiver, 
         {
             throw new Exception("Failed to receive init message");
         }
-        if (message.Body.Type != Init.InitType)
+        if (!message.TryDeserializeAs<Init>(out var initMessage))
         {
             await this.ErrorAsync(message, ErrorCodes.MalformedRequest, "First message must be an init message", cancellationToken);
             throw new Exception("First message must be an init message");
         }
-        var init = message.DeserializeAs<Init>().Body;
+        var init = initMessage.Body;
         _nodeId = init.NodeId;
         _nodeIds = init.NodeIds;
         logger.LogInformation("Node initialized. Node ID: {NodeId}", NodeId);

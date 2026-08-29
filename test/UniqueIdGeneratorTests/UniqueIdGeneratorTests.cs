@@ -11,10 +11,7 @@ public class UniqueIdGeneratorTests
     {
         await using var client = new MaelstromTestClient<UniqueIdGenerator>();
         await client.StartAsync();
-        var generate = new Generate
-        {
-            Type = Generate.GenerateType
-        };
+        var generate = new Generate();
         await client.SendAsync(generate);
         var response = await client.ReadOutputAsync<GenerateOk>();
         Assert.NotNull(response);

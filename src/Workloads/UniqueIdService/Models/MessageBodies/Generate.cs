@@ -2,7 +2,7 @@
 
 namespace UniqueIdService.Models.MessageBodies;
 
+[MessageType("generate")]
 internal class Generate : MessageBody
 {
-    public const string GenerateType = "generate";
 }

@@ -8,7 +8,7 @@ internal class EchoServer(ILogger<EchoServer> logger, IWorkloadBuilder builder) 
 {
     private readonly ILogger<EchoServer> logger = logger;
 
-    [MaelstromHandler(Echo.EchoType)]
+    [MaelstromHandler<Echo>]
     public async Task HandleEcho(Message message, CancellationToken cancellationToken = default)
     {
         var echo = message.DeserializeAs<Echo>().Body;

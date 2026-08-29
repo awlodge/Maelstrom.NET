@@ -4,15 +4,12 @@ using System.Text.Json.Serialization;
 
 namespace KafkaService.Models.MessageBodies;
 
+[MessageType("send_ok")]
 internal class SendOk : MessageBody
 {
-    public const string SendOkType = "send_ok";
-
-    [JsonConstructor]
     [SetsRequiredMembers]
-    public SendOk(int offset) : base()
+    public SendOk(int offset)
     {
-        Type = SendOkType;
         Offset = offset;
     }
 

@@ -13,7 +13,6 @@ public class EchoServiceTests
         await client.StartAsync();
         var echo = new Echo
         {
-            Type = Echo.EchoType,
             EchoMessage = "ping"
         };
         await client.SendAsync(echo);

@@ -52,7 +52,6 @@ public class BroadcastServiceTests : IAsyncLifetime
     {
         var topology = new Topology
         {
-            Type = Topology.TopologyType,
             TopologyData = new Dictionary<string, string[]>
             {
                 { _client.DstNodeId, ["b1", "b2"] }
@@ -90,7 +89,6 @@ public class BroadcastServiceTests : IAsyncLifetime
     {
         var topology = new Topology
         {
-            Type = Topology.TopologyType,
             TopologyData = new Dictionary<string, string[]>
             {
                 { _client.DstNodeId, ["b1"] }

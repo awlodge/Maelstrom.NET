@@ -12,7 +12,7 @@ internal class TransactionRwRegister(ILogger<TransactionRwRegister> logger, IWor
     private readonly ILogger<TransactionRwRegister> logger = logger;
     private readonly SemaphoreSlim _getTxnIdLock = new(1);
 
-    [MaelstromHandler(Transaction.TxnType)]
+    [MaelstromHandler<Transaction>]
     public async Task HandleTransaction(Message message, CancellationToken cancellationToken)
     {
         var transaction = message.DeserializeAs<Transaction>().Body;

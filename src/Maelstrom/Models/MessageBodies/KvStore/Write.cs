@@ -3,15 +3,12 @@ using System.Text.Json.Serialization;
 
 namespace Maelstrom.Models.MessageBodies.KvStore;
 
+[MessageType("write")]
 internal class Write<T, U> : MessageBody
 {
-    public const string WriteType = "write";
-
-    [JsonConstructor]
     [SetsRequiredMembers]
-    public Write(T key, U value) : base()
+    public Write(T key, U value)
     {
-        Type = WriteType;
         Key = key;
         Value = value;
     }

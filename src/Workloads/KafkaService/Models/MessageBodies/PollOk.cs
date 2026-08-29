@@ -4,15 +4,12 @@ using System.Text.Json.Serialization;
 
 namespace KafkaService.Models.MessageBodies;
 
+[MessageType("poll_ok")]
 internal class PollOk : MessageBody
 {
-    public const string PollOkType = "poll_ok";
-
-    [JsonConstructor]
     [SetsRequiredMembers]
     public PollOk(Dictionary<string, List<List<int>>> messages) : base()
     {
-        Type = PollOkType;
         Messages = messages;
     }
 

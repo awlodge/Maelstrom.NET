@@ -3,15 +3,12 @@ using System.Text.Json.Serialization;
 
 namespace Maelstrom.Models.MessageBodies.KvStore;
 
+[MessageType("cas")]
 internal class Cas<T, U> : MessageBody
 {
-    public const string CasType = "cas";
-
-    [JsonConstructor]
     [SetsRequiredMembers]
-    public Cas(T key, U from, U to, bool createIfNotExists = false) : base()
+    public Cas(T key, U from, U to, bool createIfNotExists = false)
     {
-        Type = CasType;
         Key = key;
         From = from;
         To = to;

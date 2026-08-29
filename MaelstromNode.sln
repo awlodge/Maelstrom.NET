@@ -31,7 +31,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UniqueIdGeneratorTests", "t
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BroadcastServiceTests", "test\BroadcastServiceTests\BroadcastServiceTests.csproj", "{F04F6715-74BD-4693-957C-363C50809740}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CounterServiceTests", "test\CounterServiceTests\CounterServiceTests.csproj", "{655BFFEE-1CEC-4E27-A7E5-21959040E340}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CounterServiceTests", "test\CounterServiceTests\CounterServiceTests.csproj", "{655BFFEE-1CEC-4E27-A7E5-21959040E340}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MaelstromUnitTests", "test\MaelstromUnitTests\MaelstromUnitTests.csproj", "{90A366F8-08E4-4FBC-BE2A-FEDB6BCDB47A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -87,6 +89,10 @@ Global
 		{655BFFEE-1CEC-4E27-A7E5-21959040E340}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{655BFFEE-1CEC-4E27-A7E5-21959040E340}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{655BFFEE-1CEC-4E27-A7E5-21959040E340}.Release|Any CPU.Build.0 = Release|Any CPU
+		{90A366F8-08E4-4FBC-BE2A-FEDB6BCDB47A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90A366F8-08E4-4FBC-BE2A-FEDB6BCDB47A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90A366F8-08E4-4FBC-BE2A-FEDB6BCDB47A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90A366F8-08E4-4FBC-BE2A-FEDB6BCDB47A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -105,6 +111,7 @@ Global
 		{3AC94972-0CC6-48A0-87BF-412AAFD4D055} = {1074A9D1-DF85-415C-BA0F-0DE8E4A8BE58}
 		{F04F6715-74BD-4693-957C-363C50809740} = {1074A9D1-DF85-415C-BA0F-0DE8E4A8BE58}
 		{655BFFEE-1CEC-4E27-A7E5-21959040E340} = {1074A9D1-DF85-415C-BA0F-0DE8E4A8BE58}
+		{90A366F8-08E4-4FBC-BE2A-FEDB6BCDB47A} = {1074A9D1-DF85-415C-BA0F-0DE8E4A8BE58}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A69B1778-8100-4DB8-99D8-C72333C7FBF4}

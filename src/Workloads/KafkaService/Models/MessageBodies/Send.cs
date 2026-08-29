@@ -3,10 +3,9 @@ using System.Text.Json.Serialization;
 
 namespace KafkaService.Models.MessageBodies;
 
+[MessageType("send")]
 internal class Send : MessageBody
 {
-    public const string SendType = "send";
-
     [JsonPropertyName("key")]
     public required string Key { get; set; }
 

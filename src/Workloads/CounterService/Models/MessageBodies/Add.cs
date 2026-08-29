@@ -4,15 +4,12 @@ using System.Text.Json.Serialization;
 
 namespace CounterService.Models.MessageBodies;
 
+[MessageType("add")]
 internal class Add : MessageBody
 {
-    public const string AddType = "add";
-
-    [JsonConstructor]
     [SetsRequiredMembers]
-    public Add(int delta) : base()
+    public Add(int delta)
     {
-        Type = AddType;
         Delta = delta;
     }
 

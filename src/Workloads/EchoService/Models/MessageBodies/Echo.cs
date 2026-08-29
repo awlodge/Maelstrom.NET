@@ -3,10 +3,9 @@ using System.Text.Json.Serialization;
 
 namespace EchoService.Models.MessageBodies;
 
+[MessageType("echo")]
 internal class Echo : MessageBody
 {
-    public const string EchoType = "echo";
-
     [JsonPropertyName("echo")]
     public required string EchoMessage { get; set; }
 }

@@ -4,15 +4,12 @@ using System.Text.Json.Serialization;
 
 namespace BroadcastService.Models.MessageBodies;
 
+[MessageType("read_ok")]
 internal class ReadOk : MessageBody
 {
-    public const string ReadOkType = "read_ok";
-
-    [JsonConstructor]
     [SetsRequiredMembers]
-    public ReadOk(int[] readMessages) : base()
+    public ReadOk(int[] readMessages)
     {
-        Type = ReadOkType;
         ReadMessages = readMessages;
     }
 

@@ -15,7 +15,7 @@ internal class BroadcastService(ILogger<BroadcastService> logger, IWorkloadBuild
     private readonly TimeSpan _rpcTimeout = options.Value.RpcTimeout;
     private readonly TimeSpan _rpcRetryDelay = options.Value.RpcRetryDelay;
 
-    [MaelstromHandler(Broadcast.BroadcastType)]
+    [MaelstromHandler<Broadcast>]
     public async Task HandleBroadcast(Message message, CancellationToken cancellationToken)
     {
         var broadcastMessage = message.DeserializeAs<Broadcast>().Body.BroadcastMessage;
@@ -37,14 +37,14 @@ internal class BroadcastService(ILogger<BroadcastService> logger, IWorkloadBuild
         }
     }
 
-    [MaelstromHandler(Read.ReadType)]
+    [MaelstromHandler<Read>]
     public async Task HandleRead(Message message, CancellationToken cancellationToken)
     {
         logger.LogInformation("Received read request");
         await node.ReplyAsync(message, new ReadOk([.. _broadcastMessages]), cancellationToken);
     }
 
-    [MaelstromHandler(Topology.TopologyType)]
+    [MaelstromHandler<Topology>]
     public async Task HandleTopology(Message message, CancellationToken cancellationToken)
     {
         var topologyMessage = message.DeserializeAs<Topology>().Body;

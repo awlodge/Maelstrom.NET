@@ -3,15 +3,12 @@ using System.Text.Json.Serialization;
 
 namespace Maelstrom.Models.MessageBodies.KvStore;
 
+[MessageType("read_ok")]
 internal class ReadOk<T> : MessageBody
 {
-    public const string ReadOkType = "read_ok";
-
-    [JsonConstructor]
     [SetsRequiredMembers]
-    public ReadOk(T value) : base()
+    public ReadOk(T value)
     {
-        Type = ReadOkType;
         Value = value;
     }
 

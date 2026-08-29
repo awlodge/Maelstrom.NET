@@ -48,7 +48,6 @@ public class CounterServiceTests : IAsyncLifetime
 
         var addResponse = await _client.ReadOutputAsync<AddOk>();
         Assert.NotNull(addResponse);
-        Assert.Equal(AddOk.AddOkType, addResponse.Body.Type);
 
         var lookupResult = await _client.KvStore.ExpectReadAsync("seq-kv", "counter");
         Assert.False(lookupResult);

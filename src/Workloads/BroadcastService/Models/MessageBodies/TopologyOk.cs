@@ -1,17 +1,8 @@
 ﻿using Maelstrom.Models;
-using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Serialization;
 
 namespace BroadcastService.Models.MessageBodies;
 
+[MessageType("topology_ok")]
 internal class TopologyOk : MessageBody
 {
-    public const string TopologyOkType = "topology_ok";
-
-    [JsonConstructor]
-    [SetsRequiredMembers]
-    public TopologyOk() : base()
-    {
-        Type = TopologyOkType;
-    }
 }

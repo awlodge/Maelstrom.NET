@@ -4,15 +4,12 @@ using System.Text.Json.Serialization;
 
 namespace UniqueIdService.Models.MessageBodies;
 
+[MessageType("generate_ok")]
 internal class GenerateOk : MessageBody
 {
-    public const string GenerateOkType = "generate_ok";
-
-    [JsonConstructor]
     [SetsRequiredMembers]
     public GenerateOk(int id) : base()
     {
-        Type = GenerateOkType;
         Id = id;
     }
 

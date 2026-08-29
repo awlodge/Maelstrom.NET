@@ -13,7 +13,7 @@ internal class KafkaLog(ILogger<KafkaLog> logger, IWorkloadBuilder builder) : Wo
     private readonly ILogger<KafkaLog> logger = logger;
     private readonly SemaphoreSlim _offsetLock = new(1);
 
-    [MaelstromHandler(Send.SendType)]
+    [MaelstromHandler<Send>]
     public async Task HandleSend(Message message, CancellationToken cancellationToken)
     {
         var send = message.DeserializeAs<Send>().Body;
@@ -23,7 +23,7 @@ internal class KafkaLog(ILogger<KafkaLog> logger, IWorkloadBuilder builder) : Wo
         await node.ReplyAsync(message, new SendOk(offset), cancellationToken);
     }
 
-    [MaelstromHandler(Poll.PollType)]
+    [MaelstromHandler<Poll>]
     public async Task HandlePoll(Message message, CancellationToken cancellationToken)
     {
         var poll = message.DeserializeAs<Poll>().Body;
@@ -35,7 +35,7 @@ internal class KafkaLog(ILogger<KafkaLog> logger, IWorkloadBuilder builder) : Wo
         await node.ReplyAsync(message, new PollOk(messages.ToDictionary()), cancellationToken);
     }
 
-    [MaelstromHandler(CommitOffsets.CommitOffsetsType)]
+    [MaelstromHandler<CommitOffsets>]
     public async Task HandleCommitOffsets(Message message, CancellationToken cancellationToken)
     {
         var commitOffsets = message.DeserializeAs<CommitOffsets>().Body;
@@ -46,7 +46,7 @@ internal class KafkaLog(ILogger<KafkaLog> logger, IWorkloadBuilder builder) : Wo
             .Select(kv => UpdateCommittedOffset(kv.Key, kv.Value, cancellationToken)));
     }
 
-    [MaelstromHandler(ListCommittedOffsets.ListCommittedOffsetsType)]
+    [MaelstromHandler<ListCommittedOffsets>]
     public async Task HandleListCommittedOffsets(Message message, CancellationToken cancellationToken)
     {
         var listCommittedOffsets = message.DeserializeAs<ListCommittedOffsets>().Body;

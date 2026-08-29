@@ -4,15 +4,12 @@ using System.Text.Json.Serialization;
 
 namespace BroadcastService.Models.MessageBodies;
 
+[MessageType("broadcast")]
 internal class Broadcast : MessageBody
 {
-    public const string BroadcastType = "broadcast";
-
-    [JsonConstructor]
     [SetsRequiredMembers]
-    public Broadcast(int broadcastMessage) : base()
+    public Broadcast(int broadcastMessage)
     {
-        Type = BroadcastType;
         BroadcastMessage = broadcastMessage;
     }
 

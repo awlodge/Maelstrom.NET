@@ -12,10 +12,9 @@ internal abstract class MaelstromClientBase(ILogger logger, IReceiver receiver, 
     private readonly IReceiver _receiver = receiver;
     private readonly ISender _sender = sender;
 
-    private int _msgId = 0;
+    private volatile int _msgId = 0;
     private readonly ConcurrentDictionary<string, MaelstromHandler> _messageHandlers = [];
     private readonly ConcurrentDictionary<int, TaskCompletionSource<Message>> _replyHandlers = [];
-    private readonly SemaphoreSlim _sendLock = new(1);
 
     public abstract string NodeId { get; }
 
@@ -115,7 +114,7 @@ internal abstract class MaelstromClientBase(ILogger logger, IReceiver receiver, 
 
         try
         {
-            return JsonSerializer.Deserialize<Message<MessageBody>>(rawMessage);
+            return Message.Deserialize(rawMessage);
         }
         catch (JsonException ex)
         {
@@ -126,41 +125,23 @@ internal abstract class MaelstromClientBase(ILogger logger, IReceiver receiver, 
 
     public async Task SendAsync<T>(string destination, T body, CancellationToken cancellationToken = default) where T : MessageBody
     {
-        await _sendLock.WaitAsync(cancellationToken);
-        try
-        {
-            body.MsgId = _msgId;
-            var message = new Message<T>(NodeId, destination, body);
-            var rawMessage = message.Serialize();
-            logger.LogDebug("Sending message: {RawMessage}", rawMessage);
-            await _sender.SendAsync(rawMessage, cancellationToken);
-            _msgId++;
-        }
-        finally
-        {
-            _sendLock.Release();
-        }
+        body.MsgId = GetMessageId();
+        var message = new Message<T>(NodeId, destination, body);
+        var rawMessage = message.Serialize();
+        logger.LogDebug("Sending message: {RawMessage}", rawMessage);
+        await _sender.SendAsync(rawMessage, cancellationToken);
     }
 
     public async Task<Message> RpcAsync<T>(string destination, T body, TimeSpan? timeout = null, CancellationToken cancellationToken = default) where T : MessageBody
     {
         Task<Message> replyTask;
-        await _sendLock.WaitAsync(cancellationToken);
-        var rpcMsgId = _msgId;
-        try
-        {
-            body.MsgId = rpcMsgId;
-            var message = new Message<T>(NodeId, destination, body);
-            var rawMessage = message.Serialize();
-            replyTask = AddReplyHander(rpcMsgId).Task;
-            logger.LogDebug("Sending RPC message: {RawMessage}", rawMessage);
-            await _sender.SendAsync(rawMessage, cancellationToken);
-            _msgId++;
-        }
-        finally
-        {
-            _sendLock.Release();
-        }
+        var rpcMsgId = GetMessageId();
+        body.MsgId = rpcMsgId;
+        var message = new Message<T>(NodeId, destination, body);
+        var rawMessage = message.Serialize();
+        replyTask = AddReplyHander(rpcMsgId).Task;
+        logger.LogDebug("Sending RPC message: {RawMessage}", rawMessage);
+        await _sender.SendAsync(rawMessage, cancellationToken);
 
         var cancellationTask = Task.Delay(timeout ?? Timeout.InfiniteTimeSpan, cancellationToken);
         await Task.WhenAny([replyTask, cancellationTask]);
@@ -183,6 +164,8 @@ internal abstract class MaelstromClientBase(ILogger logger, IReceiver receiver, 
             throw new RpcFailedException("RPC timed out or was cancelled");
         }
     }
+
+    private int GetMessageId() => Interlocked.Increment(ref _msgId);
 
     private TaskCompletionSource<Message> AddReplyHander(int msgId)
     {

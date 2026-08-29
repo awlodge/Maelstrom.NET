@@ -2,22 +2,18 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
-namespace TransactionRwRegisterService.Models.MessageBodies
+namespace TransactionRwRegisterService.Models.MessageBodies;
+
+[MessageType("txn_ok")]
+internal class TransactionOk : MessageBody
 {
-    internal class TransactionOk : MessageBody
+    [SetsRequiredMembers]
+    public TransactionOk(List<Operation> operations) : base()
     {
-        public const string TxnOkType = "txn_ok";
-
-        [JsonConstructor]
-        [SetsRequiredMembers]
-        public TransactionOk(List<Operation> operations) : base()
-        {
-            Type = TxnOkType;
-            Operations = operations;
-        }
-
-        [JsonPropertyName("txn")]
-        [JsonConverter(typeof(OperationListConverter))]
-        public required List<Operation> Operations { get; set; }
+        Operations = operations;
     }
+
+    [JsonPropertyName("txn")]
+    [JsonConverter(typeof(OperationListConverter))]
+    public required List<Operation> Operations { get; set; }
 }

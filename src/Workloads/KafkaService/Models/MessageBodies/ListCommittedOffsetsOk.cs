@@ -4,15 +4,12 @@ using System.Text.Json.Serialization;
 
 namespace KafkaService.Models.MessageBodies;
 
+[MessageType("list_committed_offsets_ok")]
 internal class ListCommittedOffsetsOk : MessageBody
 {
-    public const string ListCommittedOffsetsOkType = "list_committed_offsets_ok";
-
-    [JsonConstructor]
     [SetsRequiredMembers]
-    public ListCommittedOffsetsOk(Dictionary<string, int> offsets) : base()
+    public ListCommittedOffsetsOk(Dictionary<string, int> offsets)
     {
-        Type = ListCommittedOffsetsOkType;
         Offsets = offsets;
     }
 

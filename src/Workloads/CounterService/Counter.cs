@@ -10,7 +10,7 @@ internal class Counter(ILogger<Counter> logger, IWorkloadBuilder builder) : Work
     private const int _maxAttempts = 10;
     private readonly ILogger<Counter> logger = logger;
 
-    [MaelstromHandler(Read.ReadType)]
+    [MaelstromHandler<Read>]
     public async Task HandleRead(Message message, CancellationToken cancellationToken)
     {
         logger.LogDebug("Received counter read");
@@ -21,7 +21,7 @@ internal class Counter(ILogger<Counter> logger, IWorkloadBuilder builder) : Work
         await node.ReplyAsync(message, new ReadOk<int>(latestValue), cancellationToken);
     }
 
-    [MaelstromHandler(Add.AddType)]
+    [MaelstromHandler<Add>]
     public async Task HandleAdd(Message message, CancellationToken cancellationToken)
     {
         var add = message.DeserializeAs<Add>().Body;

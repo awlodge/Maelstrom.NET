@@ -3,10 +3,9 @@ using System.Text.Json.Serialization;
 
 namespace KafkaService.Models.MessageBodies;
 
+[MessageType("list_committed_offsets")]
 internal class ListCommittedOffsets : MessageBody
 {
-    public const string ListCommittedOffsetsType = "list_committed_offsets";
-
     [JsonPropertyName("keys")]
     public required List<string> Keys { get; set; }
 }

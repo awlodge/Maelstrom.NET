@@ -1,16 +1,6 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Serialization;
+﻿namespace Maelstrom.Models.MessageBodies.KvStore;
 
-namespace Maelstrom.Models.MessageBodies.KvStore;
-
+[MessageType("write_ok")]
 internal class WriteOk : MessageBody
 {
-    public const string WriteOkType = "write_ok";
-
-    [JsonConstructor]
-    [SetsRequiredMembers]
-    public WriteOk() : base()
-    {
-        Type = WriteOkType;
-    }
 }

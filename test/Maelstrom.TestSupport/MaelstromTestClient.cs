@@ -2,7 +2,6 @@
 using Maelstrom.Models.MessageBodies;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.Text.Json;
 using System.Threading.Channels;
 
 namespace Maelstrom.TestSupport;
@@ -64,7 +63,7 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable, IMaelstromTestCl
         var cancellationSource = new CancellationTokenSource();
         cancellationSource.CancelAfter(timeout);
         var rawMessage = await _nodeOutput.Reader.ReadAsync(cancellationSource.Token);
-        return JsonSerializer.Deserialize<Message<MessageBody>>(rawMessage) ?? throw new InvalidOperationException($"Failed to deserialize: {rawMessage}");
+        return Message.Deserialize(rawMessage) ?? throw new InvalidOperationException($"Failed to deserialize: {rawMessage}");
     }
 
     public async Task<Message> RpcAsync<T>(string destination, T body, TimeSpan? timeout = null, CancellationToken cancellationToken = default) where T : MessageBody
@@ -110,12 +109,7 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable, IMaelstromTestCl
 
     private async Task SendInitAsync()
     {
-        var init = new Init
-        {
-            Type = Init.InitType,
-            NodeId = DstNodeId,
-            NodeIds = []
-        };
+        var init = new Init(DstNodeId, []);
         await RpcAsync(DstNodeId, init);
     }
 }

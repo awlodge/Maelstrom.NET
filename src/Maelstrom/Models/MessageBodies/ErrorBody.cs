@@ -1,18 +1,14 @@
-﻿using Maelstrom.Models;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace Maelstrom.Models.MessageBodies;
 
+[MessageType("error")]
 public class ErrorBody : MessageBody
 {
-    public const string ErrorBodyType = "error";
-
-    [JsonConstructor]
     [SetsRequiredMembers]
-    public ErrorBody(ErrorCodes errorCode, string errorText) : base()
+    public ErrorBody(ErrorCodes errorCode, string errorText)
     {
-        Type = ErrorBodyType;
         ErrorCode = errorCode;
         ErrorText = errorText;
     }
