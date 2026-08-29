@@ -66,11 +66,20 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable, IMaelstromTestCl
         return Message.Deserialize(rawMessage) ?? throw new InvalidOperationException($"Failed to deserialize: {rawMessage}");
     }
 
-    public async Task<Message> RpcAsync<T>(string destination, T body, TimeSpan? timeout = null, CancellationToken cancellationToken = default) where T : MessageBody
+    public async Task<RpcResult<TRecv>> RpcAsync<TSend, TRecv>(string destination, TSend body, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        where TSend : MessageBody
+        where TRecv : MessageBody
     {
         await SendAsync(destination, body, cancellationToken);
-        return await RecvAsync(timeout ?? default);
+        var response = await RecvAsync(timeout ?? default);
+        return new RpcResult<TRecv>(response);
     }
+
+    public Task<RpcResult<TRecv>> RpcAsync<TSend, TRecv>(TSend body, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        where TSend : MessageBody
+        where TRecv : MessageBody
+        => RpcAsync<TSend, TRecv>(DstNodeId, body, timeout, cancellationToken);
+
 
     public async Task<Message<T>> ReadOutputAsync<T>(TimeSpan timeout = default) where T : MessageBody
     {
@@ -110,6 +119,6 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable, IMaelstromTestCl
     private async Task SendInitAsync()
     {
         var init = new Init(DstNodeId, []);
-        await RpcAsync(DstNodeId, init);
+        await RpcAsync<Init, InitOk>(DstNodeId, init);
     }
 }

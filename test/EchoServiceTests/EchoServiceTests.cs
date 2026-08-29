@@ -15,9 +15,8 @@ public class EchoServiceTests
         {
             EchoMessage = "ping"
         };
-        await client.SendAsync(echo);
-        var response = await client.ReadOutputAsync<EchoOk>();
-        Assert.NotNull(response);
-        Assert.Equal("ping", response.Body.EchoMessage);
+        var result = await client.RpcAsync<Echo, EchoOk>(echo);
+        Assert.True(result.IsSuccess);
+        Assert.Equal("ping", result.Result.EchoMessage);
     }
 }

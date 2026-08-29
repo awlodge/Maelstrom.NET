@@ -1,6 +1,5 @@
 ﻿using BroadcastService.Models.MessageBodies;
 using Maelstrom;
-using Maelstrom.Internals;
 using Maelstrom.Models;
 using Microsoft.Extensions.Options;
 
@@ -65,7 +64,8 @@ internal class BroadcastService(ILogger<BroadcastService> logger, IWorkloadBuild
         {
             try
             {
-                await node.RpcAsync(neighbor, new Broadcast(broadcastMessage), timeout: _rpcTimeout, cancellationToken: cancellationToken);
+                var result = await node.RpcAsync<Broadcast, BroadcastOk>(neighbor, new(broadcastMessage), timeout: _rpcTimeout, cancellationToken: cancellationToken);
+                result.ThrowOnError();
                 return;
             }
             catch (RpcFailedException ex)

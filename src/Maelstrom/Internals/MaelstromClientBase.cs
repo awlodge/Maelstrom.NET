@@ -132,12 +132,14 @@ internal abstract class MaelstromClientBase(ILogger logger, IReceiver receiver, 
         await _sender.SendAsync(rawMessage, cancellationToken);
     }
 
-    public async Task<Message> RpcAsync<T>(string destination, T body, TimeSpan? timeout = null, CancellationToken cancellationToken = default) where T : MessageBody
+    public async Task<RpcResult<TRecv>> RpcAsync<TSend, TRecv>(string destination, TSend body, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        where TSend : MessageBody
+        where TRecv : MessageBody
     {
         Task<Message> replyTask;
         var rpcMsgId = GetMessageId();
         body.MsgId = rpcMsgId;
-        var message = new Message<T>(NodeId, destination, body);
+        var message = new Message<TSend>(NodeId, destination, body);
         var rawMessage = message.Serialize();
         replyTask = AddReplyHander(rpcMsgId).Task;
         logger.LogDebug("Sending RPC message: {RawMessage}", rawMessage);
@@ -147,7 +149,7 @@ internal abstract class MaelstromClientBase(ILogger logger, IReceiver receiver, 
         await Task.WhenAny([replyTask, cancellationTask]);
         if (replyTask.IsCompletedSuccessfully)
         {
-            return replyTask.Result;
+            return new RpcResult<TRecv>(replyTask.Result);
         }
         else if (replyTask.IsFaulted)
         {
@@ -182,13 +184,4 @@ internal abstract class MaelstromClientBase(ILogger logger, IReceiver receiver, 
     {
         return _replyHandlers.TryRemove(msgId, out tcs);
     }
-}
-
-public class RpcFailedException : Exception
-{
-    public RpcFailedException() : base() { }
-
-    public RpcFailedException(string message) : base(message) { }
-
-    public RpcFailedException(string message, Exception inner) : base(message, inner) { }
 }

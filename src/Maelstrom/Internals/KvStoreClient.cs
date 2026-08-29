@@ -15,9 +15,8 @@ internal class KvStoreClient(IMaelstromNode node, ILogger<KvStoreClient> logger,
     public async Task<U> ReadAsync<T, U>(T key, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Reading key {key}", key);
-        Read<T> read = new(key);
-        var response = await _node.RpcAsync(_serviceName, read, cancellationToken: cancellationToken);
-        if (response.IsError(out var error))
+        var result = await _node.RpcAsync<Read<T>, ReadOk<U>>(_serviceName, new(key), cancellationToken: cancellationToken);
+        if (result.IsError(out var error))
         {
             logger.LogDebug("Error reading key {key}: {errorCode} {errorText}", key, error.ErrorCode, error.ErrorText);
             if (error.ErrorCode == ErrorCodes.KeyDoesNotExist)
@@ -28,7 +27,7 @@ internal class KvStoreClient(IMaelstromNode node, ILogger<KvStoreClient> logger,
             throw new KvStoreException($"Error reading key {key}: {error.ErrorText}");
         }
 
-        var readOk = response.DeserializeAs<ReadOk<U>>().Body;
+        var readOk = result.Result;
         logger.LogDebug("Read key {key}: {value}", key, readOk.Value);
         return readOk.Value;
     }
@@ -37,16 +36,12 @@ internal class KvStoreClient(IMaelstromNode node, ILogger<KvStoreClient> logger,
     {
         logger.LogDebug("Writing key {key}: {value}", key, value);
         Write<T, U> write = new(key, value);
-        var response = await _node.RpcAsync(_serviceName, write, cancellationToken: cancellationToken);
-        if (response.IsError(out var error))
+        var result = await _node.RpcAsync<Write<T, U>, WriteOk>(_serviceName, write, cancellationToken: cancellationToken);
+        if (result.IsError(out var error))
         {
             throw new KvStoreException($"Error writing key {key}: {error.ErrorText}");
         }
 
-        if (!response.TryDeserializeAs<WriteOk>(out _))
-        {
-            throw new Exception($"Unexpected return type for Write operation: {response.Body.Type}");
-        }
         logger.LogDebug("Wrote key {key}: {value}", key, value);
     }
 
@@ -54,8 +49,8 @@ internal class KvStoreClient(IMaelstromNode node, ILogger<KvStoreClient> logger,
     {
         logger.LogDebug("CAS key {key} from {from} to {to}", key, from, to);
         Cas<T, U> cas = new(key, from, to, createIfNotExists);
-        var response = await _node.RpcAsync(_serviceName, cas, cancellationToken: cancellationToken);
-        if (response.IsError(out var error))
+        var result = await _node.RpcAsync<Cas<T, U>, CasOk>(_serviceName, cas, cancellationToken: cancellationToken);
+        if (result.IsError(out var error))
         {
             logger.LogDebug("Error setting key {key}: {errorCode} {errorText}", key, error.ErrorCode, error.ErrorText);
 
@@ -67,10 +62,6 @@ internal class KvStoreClient(IMaelstromNode node, ILogger<KvStoreClient> logger,
             };
         }
 
-        if (!response.TryDeserializeAs<CasOk>(out _))
-        {
-            throw new Exception($"Unexpected return type for CAS operation: {response.Body.Type}");
-        }
         logger.LogDebug("CAS key {key} from {from} to {to} succeeded", key, from, to);
     }
 }
