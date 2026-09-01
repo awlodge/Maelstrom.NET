@@ -9,4 +9,5 @@ public interface IMaelstromClient
     Task<RpcResult<TRecv>> RpcAsync<TSend, TRecv>(string destination, TSend body, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
         where TSend : MessageBody
         where TRecv : MessageBody;
+    void AddMessageHandler(string messageType, MaelstromHandlerAttribute.MaelstromHandler handler);
 }

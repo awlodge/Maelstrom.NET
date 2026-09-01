@@ -4,18 +4,18 @@ using Microsoft.Extensions.Logging;
 
 namespace Maelstrom.Internals;
 
-internal class KvStoreClient(IMaelstromNode node, ILogger<KvStoreClient> logger, string serviceName) : IKvStoreClient
+internal class KvStoreClient(IMaelstromClient client, ILogger<KvStoreClient> logger, string serviceName) : IKvStoreClient
 {
     private readonly string _serviceName = serviceName;
     private readonly ILogger<KvStoreClient> logger = logger;
-    private readonly IMaelstromNode _node = node;
+    private readonly IMaelstromClient _client = client;
 
     public ILogger Logger => logger;
 
     public async Task<U> ReadAsync<T, U>(T key, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Reading key {key}", key);
-        var result = await _node.RpcAsync<Read<T>, ReadOk<U>>(_serviceName, new(key), cancellationToken: cancellationToken);
+        var result = await _client.RpcAsync<Read<T>, ReadOk<U>>(_serviceName, new(key), cancellationToken: cancellationToken);
         if (result.IsError(out var error))
         {
             logger.LogDebug("Error reading key {key}: {errorCode} {errorText}", key, error.ErrorCode, error.ErrorText);
@@ -36,7 +36,7 @@ internal class KvStoreClient(IMaelstromNode node, ILogger<KvStoreClient> logger,
     {
         logger.LogDebug("Writing key {key}: {value}", key, value);
         Write<T, U> write = new(key, value);
-        var result = await _node.RpcAsync<Write<T, U>, WriteOk>(_serviceName, write, cancellationToken: cancellationToken);
+        var result = await _client.RpcAsync<Write<T, U>, WriteOk>(_serviceName, write, cancellationToken: cancellationToken);
         if (result.IsError(out var error))
         {
             throw new KvStoreException($"Error writing key {key}: {error.ErrorText}");
@@ -49,7 +49,7 @@ internal class KvStoreClient(IMaelstromNode node, ILogger<KvStoreClient> logger,
     {
         logger.LogDebug("CAS key {key} from {from} to {to}", key, from, to);
         Cas<T, U> cas = new(key, from, to, createIfNotExists);
-        var result = await _node.RpcAsync<Cas<T, U>, CasOk>(_serviceName, cas, cancellationToken: cancellationToken);
+        var result = await _client.RpcAsync<Cas<T, U>, CasOk>(_serviceName, cas, cancellationToken: cancellationToken);
         if (result.IsError(out var error))
         {
             logger.LogDebug("Error setting key {key}: {errorCode} {errorText}", key, error.ErrorCode, error.ErrorText);

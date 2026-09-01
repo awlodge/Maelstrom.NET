@@ -1,4 +1,5 @@
-﻿using Maelstrom.Models;
+﻿using Maelstrom.Internals;
+using Maelstrom.Models;
 using Maelstrom.Models.MessageBodies;
 
 namespace Maelstrom;
@@ -19,5 +20,13 @@ public static class MaelstromClientExtensions
     {
         var body = new ErrorBody(errorCode, errorMessage);
         await client.ReplyAsync(originalMessage, body, cancellationToken);
+    }
+
+    internal static void AddMessageHandlers(this MaelstromClientBase node, Dictionary<string, MaelstromHandlerAttribute.MaelstromHandler> handlers)
+    {
+        foreach (var handler in handlers)
+        {
+            node.AddMessageHandler(handler.Key, handler.Value);
+        }
     }
 }

@@ -34,6 +34,16 @@ public static class MaelstromNodeBuilder
         return services;
     }
 
+    public static IServiceCollection SetupMaelstromClientDependencies<TRec, TSend>(this IServiceCollection services)
+        where TRec : class, IReceiver
+        where TSend : class, ISender
+    {
+        services.TryAddSingleton<IReceiver, TRec>();
+        services.TryAddSingleton<ISender, TSend>();
+        services.TryAddSingleton<IMaelstromClientFactory>(sp => new MaelstromClientFactory(sp));
+        return services;
+    }
+
     public static async Task RunMaelstromNodeAsync(this IHost host, CancellationToken cancellationToken = default)
     {
         var node = host.Services.GetRequiredService<MaelstromNode>();

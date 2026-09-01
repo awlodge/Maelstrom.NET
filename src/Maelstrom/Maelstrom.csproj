@@ -17,6 +17,9 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
 	  <_Parameter1>MaelstromUnitTests</_Parameter1>
 	</AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+	  <_Parameter1>Maelstrom.Harness</_Parameter1>
+	</AssemblyAttribute>
   </ItemGroup>
 
 </Project>

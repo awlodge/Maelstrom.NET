@@ -13,23 +13,18 @@ internal abstract class MaelstromClientBase(ILogger logger, IReceiver receiver, 
     private readonly ISender _sender = sender;
 
     private volatile int _msgId = 0;
-    private readonly ConcurrentDictionary<string, MaelstromHandler> _messageHandlers = [];
+    private readonly ConcurrentDictionary<string, MaelstromHandlerAttribute.MaelstromHandler> _messageHandlers = [];
     private readonly ConcurrentDictionary<int, TaskCompletionSource<Message>> _replyHandlers = [];
 
     public abstract string NodeId { get; }
 
-    internal delegate Task MaelstromHandler(Message msg, CancellationToken cancellationToken = default);
-
-    internal void AddMessageHandlers(IDictionary<string, MaelstromHandler> handlers)
+    public void AddMessageHandler(string messageType, MaelstromHandlerAttribute.MaelstromHandler handler)
     {
-        foreach (var handler in handlers)
+        if (!_messageHandlers.TryAdd(messageType, handler))
         {
-            if (!_messageHandlers.TryAdd(handler.Key, handler.Value))
-            {
-                throw new InvalidOperationException($"Handler for message type {handler.Key} already registered");
-            }
-            logger.LogInformation("Registered handler for message type '{MessageType}'", handler.Key);
+            throw new InvalidOperationException($"Handler for message type {messageType} already registered");
         }
+        logger.LogInformation("Registered handler for message type '{MessageType}'", messageType);
     }
 
     public async Task RunAsync(CancellationToken stoppingToken)
@@ -37,22 +32,30 @@ internal abstract class MaelstromClientBase(ILogger logger, IReceiver receiver, 
         logger.LogInformation("Starting...");
         await InitAsync(stoppingToken);
         HashSet<Task> activeHandlers = [];
-        while (!stoppingToken.IsCancellationRequested)
+        try
         {
-            var message = await RecvAsync(stoppingToken);
-            if (message != null)
+            while (!stoppingToken.IsCancellationRequested)
             {
-                logger.LogInformation("Received message of type: {MessageType}", message.Body.Type);
-                activeHandlers.Add(ProcessMessageAsync(message, stoppingToken));
+                var message = await RecvAsync(stoppingToken);
+                if (message != null)
+                {
+                    logger.LogInformation("Received message of type: {MessageType}", message.Body.Type);
+                    activeHandlers.Add(ProcessMessageAsync(message, stoppingToken));
+                }
+                else
+                {
+                    await Task.Delay(1000, stoppingToken);
+                }
+                activeHandlers.RemoveWhere(t => t.IsCompleted);
             }
-            else
-            {
-                await Task.Delay(1000, stoppingToken);
-            }
-            activeHandlers.RemoveWhere(t => t.IsCompleted);
         }
-        logger.LogInformation("Waiting for active tasks to complete...");
-        await Task.WhenAll(activeHandlers);
+        finally
+        {
+            logger.LogInformation("Waiting for active tasks to complete...");
+            await Task.WhenAll(activeHandlers);
+        }
+
+        logger.LogInformation("Stopped");
     }
 
     private async Task ProcessMessageAsync(Message message, CancellationToken cancellationToken)

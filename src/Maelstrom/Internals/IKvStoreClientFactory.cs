@@ -2,5 +2,5 @@
 
 internal interface IKvStoreClientFactory
 {
-    KvStoreClient Create(string serviceName, IMaelstromNode node);
+    KvStoreClient Create(string serviceName, IMaelstromClient client);
 }

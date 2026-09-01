@@ -25,6 +25,11 @@ public class MaelstromBus(ILogger<MaelstromBus> logger) : IAsyncDisposable
 
     public async Task StopAsync()
     {
+        if (!_started)
+        {
+            return;
+        }
+
         _logger.LogInformation("Stopping...");
         await Task.WhenAll(_nodes.Values.Select(StopNode));
         _logger.LogInformation("Stopped");
@@ -92,7 +97,7 @@ public class MaelstromBus(ILogger<MaelstromBus> logger) : IAsyncDisposable
         Message? message;
         try
         {
-            message = JsonSerializer.Deserialize<Message>(msg);
+            message = Message.Deserialize(msg);
         }
         catch (JsonException ex)
         {
@@ -104,7 +109,7 @@ public class MaelstromBus(ILogger<MaelstromBus> logger) : IAsyncDisposable
         if (!_nodes.TryGetValue(message!.Dest, out var destNode))
         {
             _logger.LogError("Cannot find destination node {DstNodeId}", message.Dest);
-            await node.ErrorAsync("BUS", ErrorCodes.NodeNotFound, $"Destination {message.Dest} not found", message.Body.InReplyTo, cancellationToken);
+            await node.ErrorAsync("BUS", ErrorCodes.NodeNotFound, $"Destination {message.Dest} not found", message.Body.MsgId, cancellationToken);
             return;
         }
 
@@ -151,7 +156,14 @@ public class MaelstromBus(ILogger<MaelstromBus> logger) : IAsyncDisposable
             }
 
             _cancellationTokenSource?.Cancel();
-            await _loop;
+            try
+            {
+                await _loop;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+
             _loop = null;
             _cancellationTokenSource = null;
         }

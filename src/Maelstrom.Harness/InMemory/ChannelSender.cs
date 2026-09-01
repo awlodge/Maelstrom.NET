@@ -1,7 +1,6 @@
-﻿
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 
-namespace Maelstrom.TestSupport;
+namespace Maelstrom.Harness.InMemory;
 
 internal class ChannelSender(Channel<string> output) : ISender
 {
@@ -9,6 +8,7 @@ internal class ChannelSender(Channel<string> output) : ISender
 
     public void Dispose()
     {
+        _writer.TryComplete();
     }
 
     public async Task SendAsync(string message, CancellationToken cancellationToken)

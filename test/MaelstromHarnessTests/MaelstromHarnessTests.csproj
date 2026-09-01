@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -17,8 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Maelstrom.Harness\Maelstrom.Harness.csproj" />
-    <ProjectReference Include="..\..\src\Workloads\EchoService\EchoService.csproj" />
     <ProjectReference Include="..\Maelstrom.TestSupport\Maelstrom.TestSupport.csproj" />
   </ItemGroup>
 

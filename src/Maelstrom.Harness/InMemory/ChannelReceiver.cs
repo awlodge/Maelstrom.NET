@@ -1,7 +1,6 @@
-﻿
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 
-namespace Maelstrom.TestSupport;
+namespace Maelstrom.Harness.InMemory;
 
 internal class ChannelReceiver(Channel<string> input) : IReceiver
 {
@@ -13,8 +12,12 @@ internal class ChannelReceiver(Channel<string> input) : IReceiver
 
     public async Task<string?> RecvAsync(CancellationToken cancellationToken)
     {
-        await _reader.WaitToReadAsync(cancellationToken);
-        _reader.TryRead(out var message);
-        return message;
+        if (await _reader.WaitToReadAsync(cancellationToken))
+        {
+            _reader.TryRead(out var message);
+            return message;
+        }
+
+        return null;
     }
 }
