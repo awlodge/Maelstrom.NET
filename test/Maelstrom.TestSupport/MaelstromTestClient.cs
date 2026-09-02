@@ -97,7 +97,7 @@ public class MaelstromTestClient<TWorkload> : IAsyncDisposable, IMaelstromTestCl
         await RpcAsync<Init, InitOk>(DstNodeId, init);
     }
 
-    public void AddMessageHandler(string messageType, MaelstromHandlerAttribute.MaelstromHandler handler)
+    public void AddMessageHandler<T>(MaelstromHandlerAttribute.MaelstromHandler<T> handler) where T : MessageBody
     {
         throw new NotImplementedException();
     }

@@ -17,12 +17,11 @@ internal class InMemoryKvStore
     }
 
     [MaelstromHandler<Read<JsonElement>>]
-    public async Task HandleRead(Message message, CancellationToken cancellationToken = default)
+    public async Task HandleRead(Message<Read<JsonElement>> message, CancellationToken cancellationToken = default)
     {
-        var read = message.DeserializeAs<Read<JsonElement>>().Body;
-        if (!TryParseElement(read.Key, out var key))
+        if (!TryParseElement(message.Body.Key, out var key))
         {
-            await _client.ErrorAsync(message, ErrorCodes.MalformedRequest, $"Cannot parse key '{read.Key}'", cancellationToken);
+            await _client.ErrorAsync(message, ErrorCodes.MalformedRequest, $"Cannot parse key '{message.Body.Key}'", cancellationToken);
             return;
         }
         if (!_store.TryGetValue(key, out var val))
@@ -35,17 +34,16 @@ internal class InMemoryKvStore
     }
 
     [MaelstromHandler<Write<JsonElement, JsonElement>>]
-    public async Task HandleWrite(Message message, CancellationToken cancellationToken = default)
+    public async Task HandleWrite(Message<Write<JsonElement, JsonElement>> message, CancellationToken cancellationToken = default)
     {
-        var write = message.DeserializeAs<Write<JsonElement, JsonElement>>().Body;
-        if (!TryParseElement(write.Key, out var key))
+        if (!TryParseElement(message.Body.Key, out var key))
         {
-            await _client.ErrorAsync(message, ErrorCodes.MalformedRequest, $"Cannot parse key '{write.Key}'", cancellationToken);
+            await _client.ErrorAsync(message, ErrorCodes.MalformedRequest, $"Cannot parse key '{message.Body.Key}'", cancellationToken);
             return;
         }
-        if (!TryParseElement(write.Value, out var val))
+        if (!TryParseElement(message.Body.Value, out var val))
         {
-            await _client.ErrorAsync(message, ErrorCodes.MalformedRequest, $"Cannot parse value '{write.Value}'", cancellationToken);
+            await _client.ErrorAsync(message, ErrorCodes.MalformedRequest, $"Cannot parse value '{message.Body.Value}'", cancellationToken);
             return;
         }
 
@@ -55,9 +53,9 @@ internal class InMemoryKvStore
 
     [MaelstromHandler<Cas<JsonElement, JsonElement>>]
 
-    public async Task HandleCas(Message message, CancellationToken cancellationToken = default)
+    public async Task HandleCas(Message<Cas<JsonElement, JsonElement>> message, CancellationToken cancellationToken = default)
     {
-        var cas = message.DeserializeAs<Cas<JsonElement, JsonElement>>().Body;
+        var cas = message.Body;
         if (!TryParseElement(cas.Key, out var key))
         {
             await _client.ErrorAsync(message, ErrorCodes.MalformedRequest, $"Cannot parse key '{cas.Key}'", cancellationToken);

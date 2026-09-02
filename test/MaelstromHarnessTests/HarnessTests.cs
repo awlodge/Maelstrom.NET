@@ -35,9 +35,8 @@ public class HarnessTests : IAsyncLifetime
     public async Task TestRoundTrip()
     {
         var messageReceived = false;
-        Harness.Client.AddMessageHandler("test", async (Message message, CancellationToken ct) =>
+        Harness.Client.AddMessageHandler(async (Message<TestMessage> message, CancellationToken ct) =>
         {
-            var testMessage = message.DeserializeAs<TestMessage>();
             messageReceived = true;
             await Harness.Client.ReplyAsync(message, new TestMessage(), ct);
         });

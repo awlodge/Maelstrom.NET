@@ -10,7 +10,7 @@ internal class UniqueIdGenerator(ILogger<UniqueIdGenerator> logger, IWorkloadBui
     private int _idCounter = 0;
 
     [MaelstromHandler<Generate>]
-    public async Task HandleGenerate(Message message, CancellationToken cancellationToken)
+    public async Task HandleGenerate(Message<Generate> message, CancellationToken cancellationToken)
     {
         var generatedId = GenerateId();
         logger.LogInformation("Received Generate request, generated id {Id}", generatedId);

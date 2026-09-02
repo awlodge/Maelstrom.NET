@@ -9,10 +9,9 @@ internal class EchoServer(ILogger<EchoServer> logger, IWorkloadBuilder builder) 
     private readonly ILogger<EchoServer> logger = logger;
 
     [MaelstromHandler<Echo>]
-    public async Task HandleEcho(Message message, CancellationToken cancellationToken = default)
+    public async Task HandleEcho(Message<Echo> message, CancellationToken cancellationToken = default)
     {
-        var echo = message.DeserializeAs<Echo>().Body;
-        logger.LogInformation("Echoing message: {EchoMessage}", echo.EchoMessage);
-        await node.ReplyAsync(message, new EchoOk(echo.EchoMessage), cancellationToken);
+        logger.LogInformation("Echoing message: {EchoMessage}", message.Body.EchoMessage);
+        await node.ReplyAsync(message, new EchoOk(message.Body.EchoMessage), cancellationToken);
     }
 }

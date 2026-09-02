@@ -11,13 +11,18 @@ public class MaelstromHandlerAttribute<T>() : MaelstromHandlerAttribute where T 
 
 public abstract class MaelstromHandlerAttribute : Attribute
 {
-    public delegate Task MaelstromHandler(Message msg, CancellationToken cancellationToken = default);
+    public delegate Task MaelstromHandler<T>(Message<T> msg, CancellationToken cancellationToken = default) where T : MessageBody;
 
     internal abstract Type MessageType { get; }
 
     internal string GetMessageType() => MessageTypeAttribute.GetMessageType(MessageType);
 
-    internal static Dictionary<string, MaelstromHandler> GetHandlers(object o) => o.GetType().GetMethods()
+    internal static IEnumerable<(MaelstromHandlerAttribute, Delegate)> GetHandlers(object o) => o.GetType().GetMethods()
         .Where(m => m.GetCustomAttributes().OfType<MaelstromHandlerAttribute>().Any())
-        .ToDictionary(m => m.GetCustomAttribute<MaelstromHandlerAttribute>()!.GetMessageType(), m => (m.CreateDelegate(typeof(MaelstromHandler), o) as MaelstromHandler)!);
+        .Select(m =>
+        {
+            var attr = m.GetCustomAttribute<MaelstromHandlerAttribute>()!;
+            var handlerDelegate = typeof(MaelstromHandler<>)!.MakeGenericType(attr.MessageType)!;
+            return (attr, m.CreateDelegate(handlerDelegate, o));
+        });
 }

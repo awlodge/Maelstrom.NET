@@ -1,5 +1,4 @@
-﻿using Maelstrom.Internals;
-using Maelstrom.Models;
+﻿using Maelstrom.Models;
 using Maelstrom.Models.MessageBodies;
 
 namespace Maelstrom;
@@ -22,11 +21,17 @@ public static class MaelstromClientExtensions
         await client.ReplyAsync(originalMessage, body, cancellationToken);
     }
 
-    internal static void AddMessageHandlers(this MaelstromClientBase node, Dictionary<string, MaelstromHandlerAttribute.MaelstromHandler> handlers)
+    internal static void AddHandler(this IMaelstromClient client, MaelstromHandlerAttribute attribute, Delegate handler)
     {
-        foreach (var handler in handlers)
+        var addHandler = client.GetType().GetMethod(nameof(client.AddMessageHandler))!.MakeGenericMethod(attribute.MessageType)!;
+        addHandler.Invoke(client, [handler]);
+    }
+
+    internal static void AddHandlers(this IMaelstromClient client, IEnumerable<(MaelstromHandlerAttribute, Delegate)> handlers)
+    {
+        foreach (var (attr, handler) in handlers)
         {
-            node.AddMessageHandler(handler.Key, handler.Value);
+            client.AddHandler(attr, handler);
         }
     }
 }

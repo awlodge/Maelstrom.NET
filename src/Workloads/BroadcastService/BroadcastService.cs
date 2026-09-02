@@ -37,16 +37,16 @@ internal class BroadcastService(ILogger<BroadcastService> logger, IWorkloadBuild
     }
 
     [MaelstromHandler<Read>]
-    public async Task HandleRead(Message message, CancellationToken cancellationToken)
+    public async Task HandleRead(Message<Read> message, CancellationToken cancellationToken)
     {
         logger.LogInformation("Received read request");
         await node.ReplyAsync(message, new ReadOk([.. _broadcastMessages]), cancellationToken);
     }
 
     [MaelstromHandler<Topology>]
-    public async Task HandleTopology(Message message, CancellationToken cancellationToken)
+    public async Task HandleTopology(Message<Topology> message, CancellationToken cancellationToken)
     {
-        var topologyMessage = message.DeserializeAs<Topology>().Body;
+        var topologyMessage = message.Body;
         logger.LogInformation("Received topology: {topology}", topologyMessage.TopologyData);
         var topology = topologyMessage.TopologyData;
         if (topology == null)

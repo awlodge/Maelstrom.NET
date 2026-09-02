@@ -11,7 +11,7 @@ internal class Counter(ILogger<Counter> logger, IWorkloadBuilder builder) : Work
     private readonly ILogger<Counter> logger = logger;
 
     [MaelstromHandler<Read>]
-    public async Task HandleRead(Message message, CancellationToken cancellationToken)
+    public async Task HandleRead(Message<Read> message, CancellationToken cancellationToken)
     {
         logger.LogDebug("Received counter read");
 
@@ -22,9 +22,9 @@ internal class Counter(ILogger<Counter> logger, IWorkloadBuilder builder) : Work
     }
 
     [MaelstromHandler<Add>]
-    public async Task HandleAdd(Message message, CancellationToken cancellationToken)
+    public async Task HandleAdd(Message<Add> message, CancellationToken cancellationToken)
     {
-        var add = message.DeserializeAs<Add>().Body;
+        var add = message.Body;
         logger.LogDebug("Received counter add {delta}", add.Delta);
         await node.ReplyAsync(message, new AddOk(), cancellationToken);
         var latestValue = await IncrementValue(add.Delta, cancellationToken);

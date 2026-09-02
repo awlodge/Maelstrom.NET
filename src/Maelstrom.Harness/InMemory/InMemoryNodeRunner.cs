@@ -83,10 +83,8 @@ internal class InMemoryClientRunner : InMemoryNodeRunner
 
     internal IMaelstromClient Client => _client;
 
-    internal void AddMessageHandlers(Dictionary<string, MaelstromHandlerAttribute.MaelstromHandler> handlers)
-    {
-        _client.AddMessageHandlers(handlers);
-    }
+    internal void AddMessageHandlers(IEnumerable<(MaelstromHandlerAttribute, Delegate)> handlers)
+        => _client.AddHandlers(handlers);
 
     protected override Task RunAsync(CancellationToken cancellationToken) => _client.RunAsync(cancellationToken);
 }

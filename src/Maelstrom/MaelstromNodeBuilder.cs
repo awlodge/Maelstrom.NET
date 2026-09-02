@@ -49,7 +49,7 @@ public static class MaelstromNodeBuilder
         var node = host.Services.GetRequiredService<MaelstromNode>();
         foreach (var workload in host.Services.GetServices<Workload>())
         {
-            node.AddMessageHandlers(workload.GetHandlers());
+            node.AddHandlers(workload.GetHandlers());
         }
         await host.RunAsync(cancellationToken);
     }

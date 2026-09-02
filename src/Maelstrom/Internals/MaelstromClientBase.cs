@@ -13,18 +13,20 @@ internal abstract class MaelstromClientBase(ILogger logger, IReceiver receiver, 
     private readonly ISender _sender = sender;
 
     private volatile int _msgId = 0;
-    private readonly ConcurrentDictionary<string, MaelstromHandlerAttribute.MaelstromHandler> _messageHandlers = [];
+    private readonly ConcurrentDictionary<string, MessageHandler> _messageHandlers = [];
     private readonly ConcurrentDictionary<int, TaskCompletionSource<Message>> _replyHandlers = [];
 
     public abstract string NodeId { get; }
 
-    public void AddMessageHandler(string messageType, MaelstromHandlerAttribute.MaelstromHandler handler)
+    public void AddMessageHandler<T>(MaelstromHandlerAttribute.MaelstromHandler<T> handler)
+        where T : MessageBody
     {
-        if (!_messageHandlers.TryAdd(messageType, handler))
+        var messageHandler = new MessageHandler<T>(handler);
+        if (!_messageHandlers.TryAdd(messageHandler.MessageType, messageHandler))
         {
-            throw new InvalidOperationException($"Handler for message type {messageType} already registered");
+            throw new InvalidOperationException($"Handler for message type '{messageHandler.MessageType}' already registered");
         }
-        logger.LogInformation("Registered handler for message type '{MessageType}'", messageType);
+        logger.LogInformation("Registered handler for message type '{MessageType}'", messageHandler.MessageType);
     }
 
     public async Task RunAsync(CancellationToken stoppingToken)
@@ -78,7 +80,7 @@ internal abstract class MaelstromClientBase(ILogger logger, IReceiver receiver, 
             {
                 try
                 {
-                    await handler(message, cancellationToken);
+                    await handler.HandleAsync(message, cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -186,5 +188,25 @@ internal abstract class MaelstromClientBase(ILogger logger, IReceiver receiver, 
     private bool TryGetReplyHandler(int msgId, [NotNullWhen(true)] out TaskCompletionSource<Message>? tcs)
     {
         return _replyHandlers.TryRemove(msgId, out tcs);
+    }
+
+    private abstract class MessageHandler
+    {
+        public abstract string MessageType { get; }
+        public abstract Task HandleAsync(Message message, CancellationToken cancellationToken);
+    }
+
+    private class MessageHandler<T> : MessageHandler where T : MessageBody
+    {
+        private readonly MaelstromHandlerAttribute.MaelstromHandler<T> _handler;
+        public MessageHandler(MaelstromHandlerAttribute.MaelstromHandler<T> handler)
+        {
+            _handler = handler;
+            MessageType = MessageTypeAttribute.GetMessageType<T>();
+        }
+        public override string MessageType { get; }
+
+        public override Task HandleAsync(Message message, CancellationToken cancellationToken)
+            => _handler(message.DeserializeAs<T>(), cancellationToken);
     }
 }

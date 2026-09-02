@@ -14,9 +14,9 @@ internal class KafkaLog(ILogger<KafkaLog> logger, IWorkloadBuilder builder) : Wo
     private readonly SemaphoreSlim _offsetLock = new(1);
 
     [MaelstromHandler<Send>]
-    public async Task HandleSend(Message message, CancellationToken cancellationToken)
+    public async Task HandleSend(Message<Send> message, CancellationToken cancellationToken)
     {
-        var send = message.DeserializeAs<Send>().Body;
+        var send = message.Body;
         logger.LogInformation("Received send request: {Key} {Message}", send.Key, send.Message);
         var offset = await IncrementOffset(send.Key, cancellationToken);
         await WriteLog(send.Key, offset, send.Message, cancellationToken);
@@ -24,9 +24,9 @@ internal class KafkaLog(ILogger<KafkaLog> logger, IWorkloadBuilder builder) : Wo
     }
 
     [MaelstromHandler<Poll>]
-    public async Task HandlePoll(Message message, CancellationToken cancellationToken)
+    public async Task HandlePoll(Message<Poll> message, CancellationToken cancellationToken)
     {
-        var poll = message.DeserializeAs<Poll>().Body;
+        var poll = message.Body;
         logger.LogInformation("Received poll request: {Offsets}", poll.Offsets);
         ConcurrentDictionary<string, List<List<int>>> messages = [];
         await Task.WhenAll(
@@ -36,9 +36,9 @@ internal class KafkaLog(ILogger<KafkaLog> logger, IWorkloadBuilder builder) : Wo
     }
 
     [MaelstromHandler<CommitOffsets>]
-    public async Task HandleCommitOffsets(Message message, CancellationToken cancellationToken)
+    public async Task HandleCommitOffsets(Message<CommitOffsets> message, CancellationToken cancellationToken)
     {
-        var commitOffsets = message.DeserializeAs<CommitOffsets>().Body;
+        var commitOffsets = message.Body;
         logger.LogInformation("Received commit offsets request: {Offsets}", commitOffsets.Offsets);
         await node.ReplyAsync(message, new CommitOffsetsOk(), cancellationToken);
         await Task.WhenAll(
@@ -47,9 +47,9 @@ internal class KafkaLog(ILogger<KafkaLog> logger, IWorkloadBuilder builder) : Wo
     }
 
     [MaelstromHandler<ListCommittedOffsets>]
-    public async Task HandleListCommittedOffsets(Message message, CancellationToken cancellationToken)
+    public async Task HandleListCommittedOffsets(Message<ListCommittedOffsets> message, CancellationToken cancellationToken)
     {
-        var listCommittedOffsets = message.DeserializeAs<ListCommittedOffsets>().Body;
+        var listCommittedOffsets = message.Body;
         logger.LogInformation("Received list committed offsets request: {Keys}", listCommittedOffsets.Keys);
         Dictionary<string, int> committedOffsets = (await Task.WhenAll(
             listCommittedOffsets.Keys

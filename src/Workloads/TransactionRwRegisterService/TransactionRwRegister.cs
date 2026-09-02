@@ -13,9 +13,9 @@ internal class TransactionRwRegister(ILogger<TransactionRwRegister> logger, IWor
     private readonly SemaphoreSlim _getTxnIdLock = new(1);
 
     [MaelstromHandler<Transaction>]
-    public async Task HandleTransaction(Message message, CancellationToken cancellationToken)
+    public async Task HandleTransaction(Message<Transaction> message, CancellationToken cancellationToken)
     {
-        var transaction = message.DeserializeAs<Transaction>().Body;
+        var transaction = message.Body;
         var completedTransactions = await ExecuteTransactions(transaction.Operations, cancellationToken);
         await node.ReplyAsync(message, new TransactionOk(completedTransactions), cancellationToken);
     }
