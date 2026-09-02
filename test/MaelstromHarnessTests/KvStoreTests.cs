@@ -50,14 +50,74 @@ public abstract class KvStoreTests(string nodeId) : IAsyncLifetime
         Assert.Equal("hello", val);
     }
 
-    [Fact]
-    public async Task TestSuccessfulCas()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TestSuccessfulCas(bool createIfNotExists)
     {
         await KvStoreClient.WriteAsync("test", 0);
         var val = await KvStoreClient.ReadAsync<string, int>("test");
         Assert.Equal(0, val);
 
-        await KvStoreClient.CasAsync("test", 0, 1);
+        await KvStoreClient.CasAsync("test", 0, 1, createIfNotExists: createIfNotExists);
+        var val2 = await KvStoreClient.ReadAsync<string, int>("test");
+        Assert.Equal(1, val2);
+    }
+
+    [Fact]
+    public async Task TestCasCreateIfNotExists()
+    {
+        await KvStoreClient.CasAsync("test", 0, 1, createIfNotExists: true);
+        var val = await KvStoreClient.ReadAsync<string, int>("test");
+        Assert.Equal(1, val);
+    }
+
+    [Fact]
+    public async Task TestCasWhenCreateIfNotExistsFalse()
+    {
+        await Assert.ThrowsAsync<KvStoreKeyNotFoundException>(async () =>
+        {
+            await KvStoreClient.CasAsync("test", 0, 1, createIfNotExists: false);
+        });
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TestUnsuccessfulCas(bool createIfNotExists)
+    {
+        await KvStoreClient.WriteAsync("test", 0);
+        var val = await KvStoreClient.ReadAsync<string, int>("test");
+        Assert.Equal(0, val);
+
+        await Assert.ThrowsAsync<KvStoreCasPreconditionFailed>(async () =>
+        {
+            await KvStoreClient.CasAsync("test", 1, 2, createIfNotExists);
+        });
+
+        var val2 = await KvStoreClient.ReadAsync<string, int>("test");
+        Assert.Equal(0, val2);
+    }
+
+    [Fact]
+    public async Task TestParallelCas()
+    {
+        await KvStoreClient.WriteAsync("test", 0);
+        var val = await KvStoreClient.ReadAsync<string, int>("test");
+        Assert.Equal(0, val);
+
+        Task[] casAttempts = [
+            KvStoreClient.CasAsync("test", 0, 1),
+            KvStoreClient.CasAsync("test", 0, 1)
+        ];
+
+        await Assert.ThrowsAsync<KvStoreCasPreconditionFailed>(async () =>
+        {
+            await Task.WhenAll(casAttempts);
+        });
+
+        await Assert.Single(casAttempts.Where(t => t.IsCompletedSuccessfully));
+
         var val2 = await KvStoreClient.ReadAsync<string, int>("test");
         Assert.Equal(1, val2);
     }
