@@ -1,6 +1,7 @@
 ﻿using Maelstrom;
 using Maelstrom.Internals;
 using Maelstrom.Models;
+using System.Collections.Concurrent;
 using TransactionRwRegisterService.Models;
 using TransactionRwRegisterService.Models.MessageBodies;
 
@@ -11,6 +12,8 @@ internal class TransactionRwRegister(ILogger<TransactionRwRegister> logger, IWor
     private const string _transactionIdKey = "transactionId";
     private readonly ILogger<TransactionRwRegister> logger = logger;
     private readonly SemaphoreSlim _getTxnIdLock = new(1);
+    private readonly ConcurrentBag<int> _committedTransactions = [];
+    private readonly ConcurrentDictionary<int, ConcurrentDictionary<int, int>> _localData = [];
 
     [MaelstromHandler<Transaction>]
     public async Task HandleTransaction(Message<Transaction> message, CancellationToken cancellationToken)
@@ -108,6 +111,7 @@ internal class TransactionRwRegister(ILogger<TransactionRwRegister> logger, IWor
     {
         logger.LogInformation("Commit transaction: {txnId}", transactionId);
         await Task.WhenAll(localStore.Select(kv => CommitKey(kv.Key, kv.Value, transactionId, cancellationToken)));
+        _committedTransactions.Add(transactionId);
         await CommitTransaction(transactionId, cancellationToken);
     }
 
@@ -121,29 +125,47 @@ internal class TransactionRwRegister(ILogger<TransactionRwRegister> logger, IWor
         var testTransactionId = transactionId - 1;
         while (testTransactionId > 0)
         {
-            if (!await IsTransactionCommitted(testTransactionId, cancellationToken))
+            if (await IsTransactionCommitted(testTransactionId, cancellationToken))
             {
-                testTransactionId--;
-                continue;
+                var val = await TryReadWithTransaction(key, testTransactionId, cancellationToken);
+                if (val != null)
+                {
+                    return val;
+                }
             }
 
-            try
-            {
-                return await ReadRemoteKeyWithTransaction(key, testTransactionId, cancellationToken);
-            }
-            catch (KvStoreKeyNotFoundException)
-            {
-                testTransactionId--;
-            }
-
+            testTransactionId--;
         }
 
         logger.LogDebug("Key {key} not found in transaction lookback", key);
         return null;
     }
 
+    private async Task<int?> TryReadWithTransaction(int key, int transactionId, CancellationToken cancellationToken)
+    {
+        int val;
+        if (_localData.TryGetValue(key, out var x) && x.TryGetValue(transactionId, out val))
+        {
+            return val;
+        }
+
+        try
+        {
+            val = await ReadRemoteKeyWithTransaction(key, transactionId, cancellationToken);
+            CommitKeyLocal(key, val, transactionId);
+            return val;
+        }
+        catch (KvStoreKeyNotFoundException)
+        {
+            return null;
+        }
+    }
+
+    private void CommitKeyLocal(int key, int val, int transactionId) => _localData.GetOrAdd(key, new ConcurrentDictionary<int, int>()).TryAdd(transactionId, val);
+
     private async Task CommitKey(int key, int val, int transactionId, CancellationToken cancellationToken)
     {
+        CommitKeyLocal(key, val, transactionId);
         await WriteRemoteKeyWithTransaction(key, val, transactionId, cancellationToken);
     }
 
@@ -156,8 +178,20 @@ internal class TransactionRwRegister(ILogger<TransactionRwRegister> logger, IWor
     private async Task CommitTransaction(int transactionId, CancellationToken cancellationToken) =>
         await linKvStoreClient.WriteAsync(GetCommittedTransactionKey(transactionId), true, cancellationToken);
 
-    private async Task<bool> IsTransactionCommitted(int transactionId, CancellationToken cancellationToken) =>
-        await linKvStoreClient.ReadOrDefaultAsync(GetCommittedTransactionKey(transactionId), false, cancellationToken);
+    private async Task<bool> IsTransactionCommitted(int transactionId, CancellationToken cancellationToken)
+    {
+        if (_committedTransactions.Contains(transactionId))
+        {
+            return true;
+        }
+        if (await linKvStoreClient.ReadOrDefaultAsync(GetCommittedTransactionKey(transactionId), false, cancellationToken))
+        {
+            _committedTransactions.Add(transactionId);
+            return true;
+        }
+
+        return false;
+    }
 
     private static string GetRemoteKey(int key, int transactionId) => $"data/{key}/{transactionId}";
 
