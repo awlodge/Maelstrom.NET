@@ -2,17 +2,17 @@
 
 internal class StdoutSender : ISender
 {
-    private readonly StreamWriter _stream;
+    private readonly TextWriter _writer;
     public StdoutSender()
     {
         var outputStream = Console.OpenStandardOutput();
-        _stream = new StreamWriter(outputStream)
+        _writer = TextWriter.Synchronized(new StreamWriter(outputStream)
         {
             AutoFlush = true
-        };
-        Console.SetOut(_stream);
+        });
+        Console.SetOut(_writer);
     }
-    public async Task SendAsync(string message, CancellationToken cancellationToken) => await _stream.WriteLineAsync(message.AsMemory(), cancellationToken);
+    public async Task SendAsync(string message, CancellationToken cancellationToken) => await _writer.WriteLineAsync(message.AsMemory(), cancellationToken);
 
-    public void Dispose() => _stream.Dispose();
+    public void Dispose() => _writer.Dispose();
 }
