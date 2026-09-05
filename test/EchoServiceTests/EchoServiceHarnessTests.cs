@@ -1,21 +1,19 @@
 ﻿using EchoService;
 using EchoService.Models.MessageBodies;
+using Maelstrom.Harness.InMemory;
 using Maelstrom.TestSupport;
 
 namespace EchoServiceTests;
 
-public class EchoServiceHarnessTests
+public class EchoServiceHarnessTests : InMemoryHarnessTests
 {
     [Fact]
     public async Task TestEchoService()
     {
-        await using var testHarness = new InMemoryTestHarness();
-        var harness = await testHarness.Harness
-            .AddWorkload<EchoServer>()
-            .StartAsync();
-
-        var result = await harness.Client.RpcAsync<Echo, EchoOk>(harness.WorkloadNodeIds.First(), new Echo { EchoMessage = "test" }, timeout: TimeSpan.FromSeconds(1));
+        var result = await RpcAsync<Echo, EchoOk>(new Echo { EchoMessage = "test" });
         Assert.True(result.IsSuccess);
         Assert.Equal("test", result.Result.EchoMessage);
     }
+
+    protected override InMemoryHarness SetupHarness(InMemoryHarness harness) => harness.AddWorkload<EchoServer>();
 }
