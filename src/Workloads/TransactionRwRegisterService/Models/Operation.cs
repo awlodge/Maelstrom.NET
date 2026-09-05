@@ -6,12 +6,17 @@ namespace TransactionRwRegisterService.Models;
 
 internal class Operation
 {
+    [SetsRequiredMembers]
     public Operation(OperationType operationType, int key, int? val)
     {
         OperationType = operationType;
         Key = key;
         Val = val;
     }
+
+    public static Operation Read(int key, int? val = null) => new Operation(OperationType.Read, key, val);
+
+    public static Operation Write(int key, int val) => new Operation(OperationType.Write, key, val);
 
     [SetsRequiredMembers]
     public Operation(string opType, int key, int? val)

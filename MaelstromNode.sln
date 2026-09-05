@@ -35,11 +35,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CounterServiceTests", "test
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Maelstrom.Harness", "src\Maelstrom.Harness\Maelstrom.Harness.csproj", "{614122D8-2131-4F9F-8416-14F2681B7F33}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaelstromUnitTests", "test\MaelstromUnitTests\MaelstromUnitTests.csproj", "{C5AE4CE3-1FB1-42DB-98E3-8C172E77CC1D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MaelstromUnitTests", "test\MaelstromUnitTests\MaelstromUnitTests.csproj", "{C5AE4CE3-1FB1-42DB-98E3-8C172E77CC1D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaelstromHarnessTests", "test\MaelstromHarnessTests\MaelstromHarnessTests.csproj", "{E0C04E97-CC12-43DA-9C66-77F6CA5E8FCA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MaelstromHarnessTests", "test\MaelstromHarnessTests\MaelstromHarnessTests.csproj", "{E0C04E97-CC12-43DA-9C66-77F6CA5E8FCA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KafkaServiceTests", "test\KafkaServiceTests\KafkaServiceTests.csproj", "{7547E181-6AD6-489C-860E-4D8EB7CCD532}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KafkaServiceTests", "test\KafkaServiceTests\KafkaServiceTests.csproj", "{7547E181-6AD6-489C-860E-4D8EB7CCD532}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TransactionRwRegisterTests", "test\TransactionRwRegisterTests\TransactionRwRegisterTests.csproj", "{6E806EB9-1323-4935-AF4E-A35B46C5946C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -111,6 +113,10 @@ Global
 		{7547E181-6AD6-489C-860E-4D8EB7CCD532}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7547E181-6AD6-489C-860E-4D8EB7CCD532}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7547E181-6AD6-489C-860E-4D8EB7CCD532}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E806EB9-1323-4935-AF4E-A35B46C5946C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E806EB9-1323-4935-AF4E-A35B46C5946C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E806EB9-1323-4935-AF4E-A35B46C5946C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E806EB9-1323-4935-AF4E-A35B46C5946C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -133,6 +139,7 @@ Global
 		{C5AE4CE3-1FB1-42DB-98E3-8C172E77CC1D} = {1074A9D1-DF85-415C-BA0F-0DE8E4A8BE58}
 		{E0C04E97-CC12-43DA-9C66-77F6CA5E8FCA} = {1074A9D1-DF85-415C-BA0F-0DE8E4A8BE58}
 		{7547E181-6AD6-489C-860E-4D8EB7CCD532} = {1074A9D1-DF85-415C-BA0F-0DE8E4A8BE58}
+		{6E806EB9-1323-4935-AF4E-A35B46C5946C} = {1074A9D1-DF85-415C-BA0F-0DE8E4A8BE58}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A69B1778-8100-4DB8-99D8-C72333C7FBF4}
